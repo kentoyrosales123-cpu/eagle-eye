@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Patrol Management | AgilaCom</title>
 
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="/css/style.css" />
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
@@ -15,7 +15,7 @@
 <body class="admin-body">
   <aside class="admin-sidebar">
     <div class="admin-brand">
-      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <img src="/images/philippine-army-logo.png" alt="AgilaCom Logo" />
       <h2>AGILACOM</h2>
       <p>Patrol Command</p>
     </div>
@@ -268,12 +268,12 @@
 </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/role-guard.js"></script>
+  <script src="/js/role-guard.js"></script>
 <script>
   requireRoles(["admin", "commander"]);
   applyRoleMenu();
 </script>
-<script src="js/patrol-management.js"></script>
-<script src="js/admin-sos-alert.js"></script>
+<script src="/js/patrol-management.js"></script>
+<script src="/js/admin-sos-alert.js"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@ const user = JSON.parse(localStorage.getItem("user"));
 async function syncCurrentUser() {
   try {
     const response = await fetch(
-      "http://localhost:5000/api/users/me",
+      "/api/users/me",
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -190,7 +190,7 @@ async function loadUsers() {
         </td>
       </tr>
     `;
-    const response = await fetch("http://localhost:5000/api/users", {
+    const response = await fetch("/api/users", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -687,7 +687,7 @@ const assignedCommander = document.getElementById("assignedCommander").value;
   try {
     createUserMessage.innerText = "Creating user...";
 
-    const response = await fetch("http://localhost:5000/api/users", {
+    const response = await fetch("/api/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -874,7 +874,7 @@ editUserForm.addEventListener("submit", async (e) => {
     editUserMessage.innerText = "Saving changes...";
 
     const response = await fetch(
-      `http://localhost:5000/api/users/${userId}/profile`,
+      `/api/users/${userId}/profile`,
       {
         method: "PUT",
         headers: {
@@ -958,7 +958,7 @@ closeModal.addEventListener("click", () => {
 async function updateUserStatus(userId, status) {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/users/${userId}/status`,
+      `/api/users/${userId}/status`,
       {
         method: "PUT",
         headers: {
@@ -991,7 +991,7 @@ async function updateUserStatus(userId, status) {
 async function updateRoleRank(userId, role, rank) {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/users/${userId}/role-rank`,
+      `/api/users/${userId}/role-rank`,
       {
         method: "PUT",
         headers: {
@@ -1090,7 +1090,7 @@ async function toggleUserStatus(
 
   try {
     const response = await fetch(
-      `http://localhost:5000/api/users/${userId}/status`,
+      `/api/users/${userId}/status`,
       {
         method: "PUT",
         headers: {

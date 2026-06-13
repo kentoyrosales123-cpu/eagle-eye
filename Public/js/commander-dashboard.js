@@ -4,7 +4,7 @@ const user = JSON.parse(localStorage.getItem("user"));
 async function syncCurrentUser() {
   try {
     const response = await fetch(
-      "http://localhost:5000/api/users/me",
+      "/api/users/me",
       {
         headers: {
           Authorization: `Bearer ${token}`,

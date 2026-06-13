@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Commander Dashboard | AgilaCom</title>
 
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="/css/style.css" />
   <link
   rel="stylesheet"
   href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -15,14 +15,14 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
-  <link rel="icon" href="images/philippine-army-logo.png" />
+  <link rel="icon" href="/images/philippine-army-logo.png" />
   
 </head>
 
 <body class="admin-body">
   <aside class="admin-sidebar">
     <div class="admin-brand">
-      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <img src="/images/philippine-army-logo.png" alt="AgilaCom Logo" />
       <h2>AGILACOM</h2>
       <p>Commander Command</p>
     </div>
@@ -228,14 +228,14 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script src="js/role-guard.js"></script>
+<script src="/js/role-guard.js"></script>
 <script>
   requireRoles(["admin", "commander"]);
   applyRoleMenu();
 </script>
 
-<script src="js/commander-dashboard.js"></script>
-<script src="js/admin-sos-alert.js"></script>
+<script src="/js/commander-dashboard.js"></script>
+<script src="/js/admin-sos-alert.js"></script>
   
 </body>
 </html>
