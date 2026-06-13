@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Command Center | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+</head>
+
+<body class="page-transition">
+
+<div class="page-loader"></div>
+  <header class="navbar">
+    <div class="logo">
+      <img
+        src="images/philippine-army-logo.png"
+        alt="Philippine Army Logo"
+        class="header-army-logo"
+      />
+
+      <div>
+        <h1>AGILACOM</h1>
+        <p>Agile Communication and Monitoring System</p>
+      </div>
+    </div>
+
+    <nav id="navMenu">
+      <a href="index.html">Home</a>
+      <a href="about-agilacom.html">About AgilaCom</a>
+      <a href="features.html">Features</a>
+      <a href="command-center.html">Command Center</a>
+      <a href="monitoring.html">Monitoring</a>
+      <a href="communication.html">Communication</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+
+    <a href="access-system.html" class="access-btn">
+  🔒 Access System
+</a>
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  </header>
+
+  <section class="command-page">
+    <div class="command-overlay"></div>
+
+    <div class="command-content">
+      <span class="tag">AGILACOM COMMAND CENTER</span>
+
+      <h2>MISSION CONTROL INTERFACE</h2>
+
+      <p class="command-intro">
+        The AgilaCom Command Center provides a centralized tactical dashboard
+        for monitoring field units, coordinating communication, tracking alerts,
+        and supporting rapid mission response.
+      </p>
+
+      <div class="command-layout">
+        <div class="command-panel main-command-map">
+          <div class="panel-header">
+            <span>LIVE OPERATIONS MAP</span>
+            <strong>STATUS: ACTIVE</strong>
+          </div>
+
+          <div class="command-map">
+            <div class="radar-circle"></div>
+            <div class="radar-ring ring-1"></div>
+            <div class="radar-ring ring-2"></div>
+            <div class="radar-ring ring-3"></div>
+            <div class="radar-sweep"></div>
+
+            <div class="unit-dot alpha"></div>
+            <div class="unit-dot bravo"></div>
+            <div class="unit-dot charlie"></div>
+
+            <div class="unit-label alpha-label">ALPHA-01</div>
+            <div class="unit-label bravo-label">BRAVO-02</div>
+            <div class="unit-label charlie-label">CHARLIE-03</div>
+          </div>
+        </div>
+
+        <div class="command-side">
+          <div class="command-panel">
+            <div class="panel-header">
+              <span>SECURE CHANNEL</span>
+              <strong>ENCRYPTED</strong>
+            </div>
+
+            <ul class="command-list">
+              <li><span></span> Voice Relay Active</li>
+              <li><span></span> GPS Network Online</li>
+              <li><span></span> Emergency Dispatch Ready</li>
+              <li><span></span> Command Link Stable</li>
+            </ul>
+          </div>
+
+          <div class="command-panel">
+            <div class="panel-header">
+              <span>MISSION STATUS</span>
+              <strong>OPERATIONAL</strong>
+            </div>
+
+            <div class="mini-stats">
+              <div>
+                <strong>128</strong>
+                <span>Online Units</span>
+              </div>
+              <div>
+                <strong>64</strong>
+                <span>Active Patrols</span>
+              </div>
+              <div>
+                <strong>12</strong>
+                <span>Alerts</span>
+              </div>
+              <div>
+                <strong>98%</strong>
+                <span>Signal</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="command-feature-grid">
+        <div class="system-card">
+          <i class="fa-solid fa-display"></i>
+          <h4>Centralized Dashboard</h4>
+          <p>Single command interface for tracking field activity and mission updates.</p>
+        </div>
+
+        <div class="system-card">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <h4>Live Unit Tracking</h4>
+          <p>Monitor personnel and deployed units using tactical map visibility.</p>
+        </div>
+
+        <div class="system-card">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <h4>Incident Alerts</h4>
+          <p>Receive real-time emergency reports and escalate response actions.</p>
+        </div>
+
+        <div class="system-card">
+          <i class="fa-solid fa-tower-broadcast"></i>
+          <h4>Signal Coordination</h4>
+          <p>Track communication links, remote connectivity, and network status.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

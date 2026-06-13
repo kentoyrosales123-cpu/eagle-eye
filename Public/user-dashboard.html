@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Dashboard | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+</head>
+
+<body class="user-body">
+  <aside class="user-sidebar">
+    <div class="user-brand">
+      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <h2>AGILACOM</h2>
+      <p>Field Unit</p>
+    </div>
+
+    <nav>
+      <a class="active" href="user-dashboard.html">
+        <i class="fa-solid fa-house"></i> Dashboard
+      </a>
+
+      <a href="#">
+        <i class="fa-solid fa-map-location-dot"></i> My Location
+      </a>
+
+      <a href="user-patrol.html">
+        <i class="fa-solid fa-person-walking"></i> Patrol Status
+      </a>
+
+      <a href="#">
+        <i class="fa-solid fa-comments"></i> Messages
+      </a>
+
+      <a href="#">
+        <i class="fa-solid fa-triangle-exclamation"></i> Emergency
+      </a>
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </button>
+  </aside>
+
+  <main class="user-main">
+    <header class="user-topbar">
+      <div>
+        <h1>Field Unit Dashboard</h1>
+        <p>Live telemetry, patrol status, and communication access</p>
+      </div>
+
+      <div class="user-profile">
+        <i class="fa-solid fa-user"></i>
+        <div>
+          <strong id="userName">User</strong>
+          <span>Field Personnel</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="user-stats">
+      <div class="user-card">
+        <i class="fa-solid fa-circle-check"></i>
+        <div>
+          <h3 id="onlineStatus">Online</h3>
+          <p>Status</p>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <i class="fa-solid fa-signal"></i>
+        <div>
+          <h3 id="signalStrength">0%</h3>
+          <p>Signal Strength</p>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <i class="fa-solid fa-wifi"></i>
+        <div>
+          <h3 id="networkType">Unknown</h3>
+          <p>Network Type</p>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <i class="fa-solid fa-gauge-high"></i>
+        <div>
+          <h3 id="latency">0ms</h3>
+          <p>Latency</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="user-grid">
+      <div class="user-panel large">
+        <div class="panel-header">
+          <span>MY LIVE LOCATION</span>
+          <strong>TRANSMITTING</strong>
+        </div>
+
+        <div class="location-box">
+          <i class="fa-solid fa-location-dot"></i>
+          <h2 id="locationStatus">Waiting for GPS...</h2>
+          <p>Latitude: <span id="latitude">---</span></p>
+          <p>Longitude: <span id="longitude">---</span></p>
+          <p class="location-note">
+            Your location is sent automatically to the command dashboard.
+          </p>
+        </div>
+      </div>
+
+      <div class="user-panel patrol-assignment-panel">
+        <div class="panel-header">
+          <span>PATROL ASSIGNMENT</span>
+          <strong id="patrolStatus">STANDBY</strong>
+        </div>
+
+        <div class="assignment-box">
+          <h3 id="patrolName">No Active Patrol</h3>
+          <p id="patrolDetails">Wait for command patrol assignment.</p>
+
+          <div id="patrolActions" class="patrol-actions"></div>
+        </div>
+      </div>
+
+      <div class="user-panel emergency-user-panel">
+        <div class="panel-header">
+          <span>EMERGENCY</span>
+          <strong>READY</strong>
+        </div>
+
+        <button class="emergency-btn" onclick="sendEmergencyAlert()">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          Send Emergency Alert
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/user-dashboard.js"></script>
+</body>
+</html>

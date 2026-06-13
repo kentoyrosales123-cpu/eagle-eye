@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Patrol Status | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+</head>
+
+<body class="user-body">
+
+  <aside class="user-sidebar">
+    <div class="user-brand">
+      <img src="images/philippine-army-logo.png" />
+      <h2>AGILACOM</h2>
+      <p>Field Unit</p>
+    </div>
+
+    <nav>
+      <a href="user-dashboard.html">
+        <i class="fa-solid fa-house"></i>
+        Dashboard
+      </a>
+      <a href="#">
+        <i class="fa-solid fa-map-location-dot"></i> My Location
+      </a>
+
+      <a class="active" href="user-patrol.html">
+        <i class="fa-solid fa-person-walking"></i>
+        Patrol Status
+      </a>
+
+      <a href="#">
+        <i class="fa-solid fa-comments"></i> Messages
+      </a>
+      <a href="#">
+        <i class="fa-solid fa-triangle-exclamation"></i> Emergency
+      </a>
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">Logout</button>
+  </aside>
+
+  <main class="user-main">
+    <header class="user-topbar">
+      <div>
+        <h1>Patrol Status</h1>
+        <p>Current mission assignment and live tracking</p>
+      </div>
+
+      <div class="user-profile">
+        <i class="fa-solid fa-user"></i>
+        <div>
+          <strong id="userName">User</strong>
+          <span>Field Personnel</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="user-stats">
+      <div class="user-card">
+        <i class="fa-solid fa-shield"></i>
+        <div>
+          <h3 id="patrolMode">STANDBY</h3>
+          <p>Patrol Mode</p>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <i class="fa-solid fa-location-dot"></i>
+        <div>
+          <h3 id="patrolArea">NONE</h3>
+          <p>Assigned Sector</p>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <i class="fa-solid fa-clock"></i>
+        <div>
+          <h3 id="patrolTime">--:--</h3>
+          <p>Patrol Start</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="user-grid">
+      <div class="user-panel large">
+        <div class="panel-header">
+          <span>MISSION STATUS</span>
+          <strong id="missionStatusLabel">STANDBY</strong>
+        </div>
+
+        <div class="assignment-box">
+          <h2 id="missionName">No Active Patrol</h2>
+
+          <p id="missionDetails">
+            Waiting for admin assignment.
+          </p>
+
+          <br>
+
+          <button id="patrolBtn" class="emergency-btn" disabled>
+            Patrol Assigned by Admin
+          </button>
+        </div>
+      </div>
+
+      <div class="user-panel">
+        <div class="panel-header">
+          <span>LIVE STATUS</span>
+          <strong>ONLINE</strong>
+        </div>
+
+        <ul class="admin-list">
+          <li>GPS Tracking Active</li>
+          <li>Signal Monitoring Enabled</li>
+          <li>Admin Command Connected</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!-- PATROL MODAL -->
+  <div id="patrolModal" class="patrol-modal">
+    <div class="patrol-modal-content">
+      <span id="closePatrolModal" class="close-modal">&times;</span>
+
+      <div class="modal-header">
+        <h2>Patrol Mission Control</h2>
+        <p>Mission tracking and patrol completion monitoring</p>
+      </div>
+
+      <div class="mission-grid">
+        <div class="mission-card">
+          <h3>Mission Details</h3>
+          <p><strong>Mission:</strong> <span id="modalMissionName">---</span></p>
+          <p><strong>Status:</strong> <span id="modalStatus">---</span></p>
+          <p><strong>Sector:</strong> <span id="modalArea">---</span></p>
+          <p><strong>Started:</strong> <span id="modalStartTime">---</span></p>
+          <p><strong>Command:</strong> Connected</p>
+        </div>
+
+        <div class="mission-card">
+          <h3>Live GPS Tracking</h3>
+          <div id="patrolMap"></div>
+        </div>
+      </div>
+
+      <div class="patrol-actions">
+        <button id="startPatrolBtn" class="checkin-btn">START PATROL</button>
+<button id="holdPatrolBtn" class="checkin-btn">PUT ON HOLD</button>
+<button id="resumePatrolBtn" class="checkin-btn">RESUME PATROL</button>
+<button id="submitReportBtn" class="checkin-btn">SUBMIT REPORT</button>
+        <button id="checkInBtn" class="checkin-btn">CHECK IN</button>
+        <button id="sosBtn" class="sos-btn">🚨 SOS ALERT</button>
+        <button id="completePatrolBtn" class="complete-btn">
+  COMPLETE PATROL
+</button>
+      </div>
+
+      <div class="mission-card patrol-log-card">
+        <h3>Patrol Activity Logs</h3>
+        <div id="patrolLogs">
+          <p>Waiting for patrol action...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/user-patrol.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Monitoring | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+</head>
+
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <h2>AGILACOM</h2>
+      <p>Live Monitoring</p>
+    </div>
+
+    <nav>
+      <a href="admin-dashboard.html">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+
+      <a href="admin-users.html">
+        <i class="fa-solid fa-users"></i> Users
+      </a>
+
+      <a href="patrol-management.html">
+        <i class="fa-solid fa-person-military-rifle"></i> Patrol
+      </a>
+
+      <a class="active" href="monitoring.html">
+        <i class="fa-solid fa-map-location-dot"></i> Monitoring
+      </a>
+
+      <a href="communication.html">
+  <i class="fa-solid fa-comments"></i> Communication
+</a>
+
+      <a href="alerts.html">
+  <i class="fa-solid fa-triangle-exclamation"></i> Alerts
+</a>
+      <a href="settings.html">
+  <i class="fa-solid fa-gear"></i> Settings
+</a>
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Logout
+    </button>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>Live Monitoring</h1>
+        <p>Monitor online units, patrol movement, GPS location, and signal health</p>
+      </div>
+
+      <div class="admin-user">
+        <i class="fa-solid fa-user-shield"></i>
+        <div>
+          <strong id="adminName">Admin</strong>
+          <span>Command Monitoring</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="admin-stats">
+      <div class="admin-card">
+        <i class="fa-solid fa-users-viewfinder"></i>
+        <div>
+          <h3 id="onlineUnits">0</h3>
+          <p>Online Units</p>
+          <small>Currently transmitting</small>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <i class="fa-solid fa-person-walking"></i>
+        <div>
+          <h3 id="trackedUnits">0</h3>
+          <p>Tracked Units</p>
+          <small>With GPS location</small>
+        </div>
+      </div>
+
+      <div class="admin-card warning">
+        <i class="fa-solid fa-signal"></i>
+        <div>
+          <h3 id="averageSignal">0%</h3>
+          <p>Average Signal</p>
+          <small>Network health</small>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <i class="fa-solid fa-clock"></i>
+        <div>
+          <h3 id="lastRefresh">--</h3>
+          <p>Last Update</p>
+          <small>Monitoring refresh</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="monitoring-command-grid">
+      <div class="admin-panel monitoring-map-panel">
+        <div class="panel-header">
+          <span>LIVE UNIT MAP</span>
+          <strong>REAL-TIME</strong>
+        </div>
+
+        <div id="monitoringMap"></div>
+      </div>
+
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>ONLINE UNITS</span>
+          <strong>STATUS</strong>
+        </div>
+
+        <div id="unitStatusList" class="monitoring-unit-list">
+          <p>Loading units...</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/role-guard.js"></script>
+<script>
+  requireRoles(["admin", "commander", "monitoring_officer"]);
+  applyRoleMenu();
+</script>
+  <script src="js/monitoring.js"></script>
+</body>
+</html>

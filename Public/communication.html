@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Communication | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+</head>
+
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <h2>AGILACOM</h2>
+      <p>Command Communication</p>
+    </div>
+
+    <nav>
+      <a href="admin-dashboard.html">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+
+      <a href="admin-users.html">
+        <i class="fa-solid fa-users"></i> Users
+      </a>
+
+      <a href="patrol-management.html">
+        <i class="fa-solid fa-person-military-rifle"></i> Patrol
+      </a>
+
+      <a href="monitoring.html">
+        <i class="fa-solid fa-map-location-dot"></i> Monitoring
+      </a>
+
+      <a class="active" href="communication.html">
+        <i class="fa-solid fa-comments"></i> Communication
+      </a>
+
+      <a href="alerts.html">
+  <i class="fa-solid fa-triangle-exclamation"></i> Alerts
+</a>
+      <a href="settings.html">
+  <i class="fa-solid fa-gear"></i> Settings
+</a>
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Logout
+    </button>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>Communication Center</h1>
+        <p>Send command messages, monitor field communication, and manage alerts</p>
+      </div>
+
+      <div class="admin-user">
+        <i class="fa-solid fa-user-shield"></i>
+        <div>
+          <strong id="adminName">Admin</strong>
+          <span>Communication Command</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="communication-command-grid">
+      <div class="admin-panel communication-chat-panel">
+        <div class="panel-header">
+          <span>COMMAND MESSAGE</span>
+          <strong>LIVE</strong>
+        </div>
+
+        <div id="messageBox" class="message-box">
+          <div class="system-message">
+            Communication channel ready.
+          </div>
+        </div>
+
+        <form id="messageForm" class="message-form">
+          <select id="messageTarget">
+            <option value="all">All Units</option>
+            <option value="patrol_leader">Patrol Leaders</option>
+            <option value="patrol_member">Patrol Members</option>
+            <option value="commander">Commanders</option>
+          </select>
+
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type command message..."
+            required
+          />
+
+          <button type="submit">
+            <i class="fa-solid fa-paper-plane"></i>
+            Send
+          </button>
+        </form>
+      </div>
+
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>COMMUNICATION STATUS</span>
+          <strong>ONLINE</strong>
+        </div>
+
+        <ul class="communication-status-list">
+          <li><span class="green"></span> Command Channel Active</li>
+          <li><span class="green"></span> Patrol Broadcast Ready</li>
+          <li><span class="yellow"></span> Emergency Channel Standby</li>
+          <li><span class="green"></span> HQ Relay Connected</li>
+        </ul>
+
+        <div class="quick-actions">
+          <button onclick="sendQuickMessage('Return status report immediately.')">
+            Request SITREP
+          </button>
+
+          <button onclick="sendQuickMessage('Proceed with caution. Maintain communication.')">
+            Caution Order
+          </button>
+
+          <button onclick="sendQuickMessage('All units hold current position.')">
+            Hold Position
+          </button>
+
+          <button onclick="sendQuickMessage('Emergency dispatch activated. Await command instructions.')">
+            Emergency Dispatch
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-panel communication-log-panel">
+      <div class="panel-header">
+        <span>COMMUNICATION LOGS</span>
+        <strong id="logCount">0</strong>
+      </div>
+
+      <div id="communicationLogs" class="communication-logs">
+        <p>No messages yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/role-guard.js"></script>
+<script>
+  requireRoles(["admin", "commander", "communication_officer"]);
+  applyRoleMenu();
+</script>
+  <script src="js/communication.js"></script>
+</body>
+</html>

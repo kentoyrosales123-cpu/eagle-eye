@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Settings | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+</head>
+
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <h2>AGILACOM</h2>
+      <p>System Settings</p>
+    </div>
+
+    <nav>
+      <a href="admin-dashboard.html">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+
+      <a href="admin-users.html">
+        <i class="fa-solid fa-users"></i> Users
+      </a>
+
+      <a href="patrol-management.html">
+        <i class="fa-solid fa-person-military-rifle"></i> Patrol
+      </a>
+
+      <a href="monitoring.html">
+        <i class="fa-solid fa-map-location-dot"></i> Monitoring
+      </a>
+
+      <a href="communication.html">
+        <i class="fa-solid fa-comments"></i> Communication
+      </a>
+
+      <a href="alerts.html">
+        <i class="fa-solid fa-triangle-exclamation"></i> Alerts
+      </a>
+
+      <a class="active" href="settings.html">
+        <i class="fa-solid fa-gear"></i> Settings
+      </a>
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Logout
+    </button>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>System Settings</h1>
+        <p>Manage command access, interface preferences, and AgilaCom system configuration</p>
+      </div>
+
+      <div class="admin-user">
+        <i class="fa-solid fa-user-shield"></i>
+        <div>
+          <strong id="adminName">Admin</strong>
+          <span>System Administrator</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="settings-layout">
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>PROFILE SETTINGS</span>
+          <strong>ACCOUNT</strong>
+        </div>
+
+        <form id="profileSettingsForm" class="admin-form">
+          <label>Display Name</label>
+          <input type="text" id="displayName" placeholder="Admin name" />
+
+          <label>Email Address</label>
+          <input type="email" id="displayEmail" disabled />
+
+          <label>Rank</label>
+          <input type="text" id="displayRank" disabled />
+
+          <label>Role</label>
+          <input type="text" id="displayRole" disabled />
+
+          <button type="submit">
+            <i class="fa-solid fa-floppy-disk"></i>
+            Save Profile
+          </button>
+
+          <p id="profileSettingsMessage"></p>
+        </form>
+      </div>
+
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>INTERFACE SETTINGS</span>
+          <strong>UI</strong>
+        </div>
+
+        <div class="settings-option">
+          <div>
+            <h3>Compact Mode</h3>
+            <p>Reduce spacing for command-center screens.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="compactModeToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-option">
+          <div>
+            <h3>Alert Sound</h3>
+            <p>Enable sound when SOS or incident arrives.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="alertSoundToggle" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-option">
+          <div>
+            <h3>Auto Refresh</h3>
+            <p>Automatically refresh monitoring data.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="autoRefreshToggle" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>SYSTEM PREFERENCES</span>
+          <strong>COMMAND</strong>
+        </div>
+
+        <form id="systemSettingsForm" class="admin-form">
+          <label>Default Map Center Latitude</label>
+          <input type="number" step="any" id="mapLat" placeholder="7.0731" />
+
+          <label>Default Map Center Longitude</label>
+          <input type="number" step="any" id="mapLng" placeholder="125.6128" />
+
+          <label>Telemetry Refresh Interval</label>
+          <select id="refreshInterval">
+            <option value="5000">5 seconds</option>
+            <option value="10000">10 seconds</option>
+            <option value="15000">15 seconds</option>
+            <option value="30000">30 seconds</option>
+          </select>
+
+          <button type="submit">
+            <i class="fa-solid fa-gear"></i>
+            Save System Settings
+          </button>
+
+          <p id="systemSettingsMessage"></p>
+        </form>
+      </div>
+
+      <div class="admin-panel danger-zone">
+        <div class="panel-header">
+          <span>DANGER ZONE</span>
+          <strong>ADMIN ONLY</strong>
+        </div>
+
+        <div class="settings-danger-box">
+          <h3>Clear Local Alerts</h3>
+          <p>This clears SOS alerts saved in this browser only.</p>
+          <button onclick="clearLocalAlerts()">Clear Local Alerts</button>
+        </div>
+
+        <div class="settings-danger-box">
+          <h3>Clear Communication Logs</h3>
+          <p>This clears communication logs saved in this browser only.</p>
+          <button onclick="clearCommunicationLogs()">Clear Logs</button>
+        </div>
+
+        <div class="settings-danger-box">
+          <h3>Reset Local Settings</h3>
+          <p>This resets interface preferences on this browser.</p>
+          <button onclick="resetLocalSettings()">Reset Settings</button>
+        </div>
+      </div>
+    </section>
+  </main>
+<script src="js/role-guard.js"></script>
+<script>
+  requireRoles(["admin"]);
+  applyRoleMenu();
+</script>
+  <script src="js/settings.js"></script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Users | AgilaCom Admin</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+  <link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+</head>
+
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <h2>AGILACOM</h2>
+      <p>Admin Command</p>
+    </div>
+
+    <nav>
+  <a href="admin-dashboard.html">
+    <i class="fa-solid fa-chart-line"></i> Dashboard
+  </a>
+
+  <a class="active" href="admin-users.html">
+    <i class="fa-solid fa-users"></i> Users
+  </a>
+
+  <a href="patrol-management.html">
+    <i class="fa-solid fa-person-military-rifle"></i> Patrol
+  </a>
+
+  <a href="monitoring.html">
+  <i class="fa-solid fa-map-location-dot"></i> Monitoring
+</a>
+
+  <a href="communication.html">
+  <i class="fa-solid fa-comments"></i> Communication
+</a>
+
+  <a href="alerts.html">
+  <i class="fa-solid fa-triangle-exclamation"></i> Alerts
+</a>
+
+  <a href="settings.html">
+  <i class="fa-solid fa-gear"></i> Settings
+</a>
+</nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Logout
+    </button>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>User Management</h1>
+        <p>Create authorized AgilaCom users and assign system roles</p>
+      </div>
+
+      <div class="admin-user">
+        <i class="fa-solid fa-user-shield"></i>
+        <div>
+          <strong id="adminName">Admin</strong>
+          <span>System Administrator</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="user-management-layout">
+      <div class="admin-panel create-user-panel">
+        <div class="panel-header">
+          <span>CREATE USER ACCOUNT</span>
+          <strong>ADMIN ONLY</strong>
+        </div>
+
+        <form id="createUserForm" class="admin-form">
+          <div class="input-group">
+            <label>Full Name</label>
+            <input type="text" id="name" placeholder="Enter full name" required />
+          </div>
+
+          <div class="input-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="Enter email address" required />
+          </div>
+
+          <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter password" required />
+          </div>
+
+          <div class="input-group">
+  <label>Military Rank</label>
+  <select id="rank" required>
+    <option value="PVT">Private (PVT)</option>
+    <option value="PFC">Private First Class (PFC)</option>
+    <option value="CPL">Corporal (CPL)</option>
+    <option value="SGT">Sergeant (SGT)</option>
+    <option value="SSG">Staff Sergeant (SSG)</option>
+    <option value="TSG">Technical Sergeant (TSG)</option>
+    <option value="MSG">Master Sergeant (MSG)</option>
+    <option value="2LT">Second Lieutenant (2LT)</option>
+    <option value="1LT">First Lieutenant (1LT)</option>
+    <option value="CPT">Captain (CPT)</option>
+    <option value="MAJ">Major (MAJ)</option>
+    <option value="LTC">Lieutenant Colonel (LTC)</option>
+    <option value="COL">Colonel (COL)</option>
+  </select>
+</div>
+
+<div class="input-group">
+  <label>System Role</label>
+  <select id="role" required>
+    <option value="patrol_member">Patrol Member</option>
+    <option value="patrol_leader">Patrol Leader</option>
+    <option value="commander">Commander</option>
+    <option value="communication_officer">
+      Communication Officer
+    </option>
+    <option value="monitoring_officer">
+      Monitoring Officer
+    </option>
+    <option value="admin">Admin</option>
+  </select>
+</div>
+
+<div class="input-group">
+  <label>Unit</label>
+  <select id="unit" required>
+    <option value="Alpha">Alpha</option>
+    <option value="Bravo">Bravo</option>
+    <option value="Charlie">Charlie</option>
+    <option value="Delta">Delta</option>
+  </select>
+</div>
+
+<div class="input-group">
+  <label>Team</label>
+  <input type="text" id="team" value="Team 1" required />
+</div>
+
+<div class="input-group">
+  <label>Commander</label>
+  <select id="assignedCommander">
+    <option value="">No commander</option>
+  </select>
+</div>
+
+          <button type="submit" class="primary-btn">
+            <i class="fa-solid fa-user-plus"></i>
+            Create User
+          </button>
+
+          <p id="createUserMessage"></p>
+        </form>
+      </div>
+
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>ROLE GUIDE</span>
+          <strong>ACCESS CONTROL</strong>
+        </div>
+
+        <ul class="admin-list">
+          <li><span class="green"></span> Admin — Can manage system and users</li>
+          <li><span class="yellow"></span> User — Can access assigned AgilaCom functions</li>
+        </ul>
+      </div>
+    </section>
+    <section class="admin-panel users-monitoring-panel">
+  <div class="panel-header map-header">
+  <div>
+    <span>ALL USERS MONITORING</span>
+    <strong>LIVE STATUS</strong>
+  </div>
+
+  <button id="expandMapBtn" class="expand-map-btn">
+    <i class="fa-solid fa-expand"></i>
+    Expand Map
+  </button>
+</div>
+
+      <div class="user-filter-bar">
+        <div class="filter-field search-field">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            type="search"
+            id="userSearch"
+            placeholder="Search keywords"
+            class="filter-input"
+            autocomplete="off"
+            maxlength="60"
+            pattern="[A-Za-z0-9 ]*"
+            title="Use letters, numbers, and spaces only."
+          />
+        </div>
+
+        <div class="filter-field">
+          <select id="roleFilter" class="filter-select" aria-label="Filter by role">
+            <option value="">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="commander">Commander</option>
+            <option value="patrol_leader">Patrol Leader</option>
+            <option value="patrol_member">Patrol Member</option>
+            <option value="communication_officer">Communication Officer</option>
+            <option value="monitoring_officer">Monitoring Officer</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <select id="rankFilter" class="filter-select" aria-label="Filter by rank">
+            <option value="">All Ranks</option>
+            <option value="PVT">PVT</option>
+            <option value="PFC">PFC</option>
+            <option value="CPL">CPL</option>
+            <option value="SGT">SGT</option>
+            <option value="SSG">SSG</option>
+            <option value="TSG">TSG</option>
+            <option value="MSG">MSG</option>
+            <option value="2LT">2LT</option>
+            <option value="1LT">1LT</option>
+            <option value="CPT">CPT</option>
+            <option value="MAJ">MAJ</option>
+            <option value="LTC">LTC</option>
+            <option value="COL">COL</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <select id="unitFilter" class="filter-select" aria-label="Filter by unit">
+            <option value="">All Units</option>
+            <option value="Alpha">Alpha</option>
+            <option value="Bravo">Bravo</option>
+            <option value="Charlie">Charlie</option>
+            <option value="Delta">Delta</option>
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <select id="statusFilter" class="filter-select" aria-label="Filter by status">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <button id="clearFiltersBtn" class="filter-clear-btn" type="button">
+          <i class="fa-solid fa-filter-circle-xmark"></i>
+          Clear Filters
+        </button>
+      </div>
+
+  <div id="usersMap" class="users-map"></div>
+
+  <div class="users-table-wrap">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th onclick="sortUsers('name')" class="sortable-th">Name <span id="sort-name">↕</span></th>
+<th onclick="sortUsers('rank')" class="sortable-th">Rank <span id="sort-rank">↕</span></th>
+<th onclick="sortUsers('role')" class="sortable-th">Role <span id="sort-role">↕</span></th>
+<th onclick="sortUsers('unit')" class="sortable-th">Unit <span id="sort-unit">↕</span></th>
+<th>Team</th>
+<th>Commander</th>
+<th onclick="sortUsers('status')" class="sortable-th">Status <span id="sort-status">↕</span></th>
+<th>Online</th>
+<th>Patrol</th>
+<th>Coordinates</th>
+<th onclick="sortUsers('signalStrength')" class="sortable-th">Signal <span id="sort-signalStrength">↕</span></th>
+<th onclick="sortUsers('latency')" class="sortable-th">Latency <span id="sort-latency">↕</span></th>
+<th onclick="sortUsers('lastSeen')" class="sortable-th">Last Seen <span id="sort-lastSeen">↕</span></th>
+<th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="usersTableBody"></tbody>
+    </table>
+  </div>
+</section>
+<!-- Fullscreen Map Modal -->
+<div id="mapModal" class="map-modal">
+  <div class="map-modal-content">
+
+    <div class="map-modal-header">
+      <h2>AgilaCom Tactical Map</h2>
+
+      <button id="closeMapModal" class="close-map-btn">
+        ✕
+      </button>
+    </div>
+
+    <div id="fullscreenMap"></div>
+
+  </div>
+</div>
+<div id="editUserModal" class="map-modal edit-user-modal">
+  <div class="map-modal-content edit-user-modal-content">
+    <div class="map-modal-header">
+      <h2>Edit User Profile</h2>
+      <button type="button" class="close-map-btn" onclick="closeEditUserModal()">✕</button>
+    </div>
+
+    <form id="editUserForm" class="admin-form">
+      <input type="hidden" id="editUserId" />
+
+      <div class="input-group">
+        <label>Full Name</label>
+        <input type="text" id="editName" required />
+      </div>
+
+      <div class="input-group">
+        <label>Email Address</label>
+        <input type="email" id="editEmail" required />
+      </div>
+
+      <div class="input-group">
+        <label>Military Rank</label>
+        <select id="editRank" required>
+          <option value="PVT">PVT</option>
+          <option value="PFC">PFC</option>
+          <option value="CPL">CPL</option>
+          <option value="SGT">SGT</option>
+          <option value="SSG">SSG</option>
+          <option value="TSG">TSG</option>
+          <option value="MSG">MSG</option>
+          <option value="SMS">SMS</option>
+          <option value="CMS">CMS</option>
+          <option value="2LT">2LT</option>
+          <option value="1LT">1LT</option>
+          <option value="CPT">CPT</option>
+          <option value="MAJ">MAJ</option>
+          <option value="LTC">LTC</option>
+          <option value="COL">COL</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>System Role</label>
+        <select id="editRole" required>
+          <option value="admin">Admin</option>
+          <option value="commander">Commander</option>
+          <option value="patrol_leader">Patrol Leader</option>
+          <option value="patrol_member">Patrol Member</option>
+          <option value="communication_officer">Communication Officer</option>
+          <option value="monitoring_officer">Monitoring Officer</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Unit</label>
+        <select id="editUnit" required>
+          <option value="Alpha">Alpha</option>
+          <option value="Bravo">Bravo</option>
+          <option value="Charlie">Charlie</option>
+          <option value="Delta">Delta</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Team</label>
+        <input type="text" id="editTeam" required />
+      </div>
+
+      <div class="input-group">
+        <label>Commander</label>
+        <select id="editAssignedCommander">
+          <option value="">No commander</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Status</label>
+        <select id="editStatus" required>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <button type="submit" class="primary-btn">Save Changes</button>
+      <p id="editUserMessage"></p>
+    </form>
+  </div>
+</div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/admin-users.js"></script>
+<script src="js/admin-sos-alert.js"></script>
+</body>
+</html>

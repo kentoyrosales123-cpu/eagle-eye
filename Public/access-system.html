@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Access System | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+</head>
+
+<body class="page-transition">
+
+<div class="page-loader"></div>
+
+<section class="access-page">
+
+  <div class="access-overlay"></div>
+
+  <div class="access-container">
+
+    <div class="access-logo">
+      <img
+        src="images/philippine-army-logo.png"
+        alt="Army Logo"
+      />
+
+      <h1>AGILACOM</h1>
+
+      <p>
+        AGILE COMMUNICATION AND
+        MONITORING SYSTEM
+      </p>
+    </div>
+
+    <div class="access-panel">
+
+      <span class="tag">
+        SECURE COMMAND AUTHENTICATION
+      </span>
+
+      <h2>ACCESS SYSTEM</h2>
+
+      <p class="access-text">
+        Authorized personnel only.
+        Secure login required to access
+        command center operations.
+      </p>
+
+      <form id="loginForm" class="access-form">
+
+        <div class="input-group">
+          <label>Username</label>
+
+          <div class="input-icon">
+            <i class="fa-solid fa-user"></i>
+
+            <input
+  type="email"
+  id="email"
+  placeholder="Enter email"
+  required
+/>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Password</label>
+
+          <div class="input-icon">
+            <i class="fa-solid fa-lock"></i>
+
+            <input
+  type="password"
+  id="password"
+  placeholder="Enter password"
+  required
+/>
+          </div>
+        </div>
+
+        <div class="remember-box">
+          <label>
+            <input type="checkbox" />
+            Keep secure session
+          </label>
+
+        </div>
+
+        <button class="primary-btn login-btn">
+          <i class="fa-solid fa-shield-halved"></i>
+          Authenticate Access
+        </button>
+        <p id="loginMessage"></p>
+
+      </form>
+
+      <div class="secure-status">
+        <span></span>
+        ENCRYPTED MILITARY NETWORK
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<script src="js/api.js"></script>
+<script src="js/login.js"></script>
+<script src="js/script.js"></script>
+
+</body>
+</html>

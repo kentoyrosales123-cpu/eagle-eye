@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Alerts | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+</head>
+
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <h2>AGILACOM</h2>
+      <p>Emergency Alerts</p>
+    </div>
+
+    <nav>
+      <a href="admin-dashboard.html">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+
+      <a href="admin-users.html">
+        <i class="fa-solid fa-users"></i> Users
+      </a>
+
+      <a href="patrol-management.html">
+        <i class="fa-solid fa-person-military-rifle"></i> Patrol
+      </a>
+
+      <a href="monitoring.html">
+        <i class="fa-solid fa-map-location-dot"></i> Monitoring
+      </a>
+
+      <a href="communication.html">
+        <i class="fa-solid fa-comments"></i> Communication
+      </a>
+
+      <a class="active" href="alerts.html">
+        <i class="fa-solid fa-triangle-exclamation"></i> Alerts
+      </a>
+      <a href="settings.html">
+  <i class="fa-solid fa-gear"></i> Settings
+</a>
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Logout
+    </button>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>Alerts Center</h1>
+        <p>Monitor SOS, emergency incidents, acknowledgements, and cleared alerts</p>
+      </div>
+
+      <div class="admin-user">
+        <i class="fa-solid fa-user-shield"></i>
+        <div>
+          <strong id="adminName">Admin</strong>
+          <span>Emergency Command</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="admin-stats">
+      <div class="admin-card warning">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <h3 id="activeAlertCount">0</h3>
+          <p>Active Alerts</p>
+          <small>Needs response</small>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <i class="fa-solid fa-circle-check"></i>
+        <div>
+          <h3 id="acknowledgedCount">0</h3>
+          <p>Acknowledged</p>
+          <small>Command received</small>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <i class="fa-solid fa-clock"></i>
+        <div>
+          <h3 id="latestAlertTime">--</h3>
+          <p>Latest Alert</p>
+          <small>Last received</small>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div>
+          <h3 id="alertStatus">CLEAR</h3>
+          <p>System Status</p>
+          <small>Emergency channel</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="alerts-layout">
+      <div class="admin-panel alert-main-panel">
+        <div class="panel-header">
+          <span>ACTIVE SOS ALERTS</span>
+          <strong id="activeAlertLabel">0 ACTIVE</strong>
+        </div>
+
+        <div id="activeAlertsList" class="alerts-list">
+          <p>No active alerts.</p>
+        </div>
+      </div>
+
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>ALERT ACTIONS</span>
+          <strong>COMMAND</strong>
+        </div>
+
+        <div class="quick-actions">
+          <button onclick="clearAllAlerts()">Clear All Local</button>
+          <button onclick="refreshAlerts()">Refresh</button>
+          <button onclick="sendTestAlert()">Test Alert</button>
+          <button onclick="exportAlertLogs()">Export Logs</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-panel alert-log-panel">
+      <div class="panel-header">
+        <span>ALERT HISTORY</span>
+        <strong id="alertLogCount">0</strong>
+      </div>
+
+      <div id="alertLogs" class="alerts-list">
+        <p>No alert history yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/role-guard.js"></script>
+<script>
+  requireRoles([
+    "admin",
+    "commander",
+    "communication_officer",
+    "monitoring_officer",
+  ]);
+  applyRoleMenu();
+</script>
+  <script src="js/alerts.js"></script>
+</body>
+</html>

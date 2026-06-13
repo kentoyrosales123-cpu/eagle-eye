@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commander Dashboard | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+
+  <link rel="icon" href="images/philippine-army-logo.png" />
+  
+</head>
+
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <h2>AGILACOM</h2>
+      <p>Commander Command</p>
+    </div>
+
+    <nav>
+      <a class="active" href="#">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+      
+<a href="patrol-management.html">
+  <i class="fa-solid fa-person-military-rifle"></i> Patrol
+</a>
+      <a href="monitoring.html">
+  <i class="fa-solid fa-map-location-dot"></i> Monitoring
+</a>
+      <a href="communication.html">
+  <i class="fa-solid fa-comments"></i> Communication
+</a>
+      <a href="alerts.html">
+  <i class="fa-solid fa-triangle-exclamation"></i> Alerts
+</a>
+      
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Logout
+    </button>
+  </aside>
+
+  <main class="admin-main">
+  <header class="admin-topbar">
+    <div>
+      <h1>AgilaCom Mission Control</h1>
+      <p>Real-time communication, monitoring, alerts, and field coordination</p>
+    </div>
+
+    <div class="admin-user">
+      <i class="fa-solid fa-user-shield"></i>
+      <div>
+        <strong id="adminName">Admin</strong>
+        <span>Field Commander</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="admin-stats">
+    <div class="admin-card">
+      <i class="fa-solid fa-users-viewfinder"></i>
+      <div>
+        <h3 id="onlineUnits">0</h3>
+        <p>Online Units</p>
+        <small>Field personnel active</small>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <i class="fa-solid fa-person-military-rifle"></i>
+      <div>
+        <h3 id="activePatrols">0</h3>
+        <p>Active Patrols</p>
+        <small>Currently deployed</small>
+      </div>
+    </div>
+
+    <div class="admin-card warning">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div>
+        <h3 id="activeAlerts">0</h3>
+        <p>Active Alerts</p>
+        <small>Needs verification</small>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <i class="fa-solid fa-signal"></i>
+      <div>
+        <h3 id="signalHealth">0%</h3>
+        <p>Signal Health</p>
+        <small>Network stable</small>
+      </div>
+    </div>
+  </section>
+
+  <section class="mission-layout">
+    <div class="admin-panel map-panel">
+      <div class="panel-header">
+        <span>LIVE TACTICAL MAP</span>
+        <strong>ACTIVE</strong>
+      </div>
+
+      <div class="admin-map">
+  <div id="dashboardMap"></div>
+
+  <div class="map-overlay-grid"></div>
+
+  <div class="map-header-overlay">
+    <span>PHILIPPINES</span>
+    <small>TACTICAL OPERATIONS MAP</small>
+  </div>
+</div>
+    </div>
+
+    <div class="admin-panel emergency-panel" id="priorityIncidentPanel">
+  <div class="panel-header">
+    <span>PRIORITY INCIDENT</span>
+    <strong id="priorityIncidentStatus">CLEAR</strong>
+  </div>
+
+  <h3 id="priorityIncidentTitle">No Active Incident</h3>
+  <p id="priorityIncidentMessage">No emergency alert received.</p>
+
+  <div id="priorityIncidentInfo" class="priority-info" style="display:none;">
+    <div>
+      <small>Personnel</small>
+      <strong id="priorityPersonnel">---</strong>
+    </div>
+
+    <div>
+      <small>Patrol</small>
+      <strong id="priorityPatrol">---</strong>
+    </div>
+
+    <div>
+      <small>Area</small>
+      <strong id="priorityArea">---</strong>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button id="priorityRespondBtn" onclick="acknowledgePriorityAlert()" disabled>
+      Acknowledge
+    </button>
+
+    <button id="priorityMapBtn" onclick="openPriorityAlertMap()" disabled>
+      Open Map
+    </button>
+
+    <button id="viewAllAlertsBtn" onclick="openAllAlertsModal()" disabled>
+      View All
+    </button>
+
+    <button id="clearIncidentBtn" onclick="clearPriorityIncident()" disabled>
+      Clear
+    </button>
+  </div>
+</div>
+  </section>
+
+  <section class="bottom-grid">
+    <div class="admin-panel">
+      <div class="panel-header">
+        <span>SECURE COMMUNICATION</span>
+        <strong>ONLINE</strong>
+      </div>
+
+      <ul class="admin-list">
+        <li><span class="green"></span> Voice Relay Active</li>
+        <li><span class="green"></span> Encrypted Messaging Online</li>
+        <li><span class="yellow"></span> Emergency Relay Standby</li>
+        <li><span class="green"></span> HQ Command Link Stable</li>
+      </ul>
+    </div>
+
+    <div class="admin-panel">
+      <div class="panel-header">
+        <span>SIGNAL MONITORING</span>
+        <strong>0%</strong>
+      </div>
+
+      <div class="signal-row">Tower A <progress value="95" max="100"></progress> 95%</div>
+      <div class="signal-row">Tower B <progress value="82" max="100"></progress> 82%</div>
+      <div class="signal-row">LoRa Net <progress value="90" max="100"></progress> 90%</div>
+      <div class="signal-row">Reticulum <progress value="96" max="100"></progress> 96%</div>
+    </div>
+
+    <div class="admin-panel">
+      <div class="panel-header">
+        <span>QUICK ACTIONS</span>
+        <strong>COMMAND</strong>
+      </div>
+
+      <div class="quick-actions">
+        <button onclick="window.location.href='communication.html'">
+  Broadcast Message
+</button>
+
+<button onclick="window.location.href='alerts.html'">
+  Emergency Dispatch
+</button>
+
+<button onclick="generateCommanderReport()">
+  Generate Report
+</button>
+
+<button onclick="window.location.href='patrol-management.html'">
+  Assign Patrol
+</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="js/role-guard.js"></script>
+<script>
+  requireRoles(["admin", "commander"]);
+  applyRoleMenu();
+</script>
+
+<script src="js/commander-dashboard.js"></script>
+<script src="js/admin-sos-alert.js"></script>
+  
+</body>
+</html>

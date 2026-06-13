@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patrol Management | AgilaCom</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+</head>
+
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <img src="images/philippine-army-logo.png" alt="AgilaCom Logo" />
+      <h2>AGILACOM</h2>
+      <p>Patrol Command</p>
+    </div>
+
+    <nav>
+      <a href="admin-dashboard.html">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+
+      <a href="admin-users.html">
+        <i class="fa-solid fa-users"></i> Users
+      </a>
+
+      <a class="active" href="patrol-management.html">
+        <i class="fa-solid fa-person-military-rifle"></i> Patrol
+      </a>
+
+      <a href="monitoring.html">
+  <i class="fa-solid fa-map-location-dot"></i> Monitoring
+</a>
+
+      <a href="communication.html">
+  <i class="fa-solid fa-comments"></i> Communication
+</a>
+
+      <a href="alerts.html">
+  <i class="fa-solid fa-triangle-exclamation"></i> Alerts
+</a>
+      <a href="settings.html">
+  <i class="fa-solid fa-gear"></i> Settings
+</a>
+    </nav>
+
+    <button onclick="logout()" class="logout-btn">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Logout
+    </button>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <div>
+        <h1>Patrol Management</h1>
+        <p>Assign units, monitor patrol status, and prepare live field tracking</p>
+      </div>
+
+      <div class="admin-user">
+        <i class="fa-solid fa-user-shield"></i>
+        <div>
+          <strong id="adminName">Admin</strong>
+          <span>System Administrator</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="patrol-command-stats">
+  <div class="patrol-stat-card">
+    <i class="fa-solid fa-person-walking"></i>
+    <h3 id="activePatrolCountTop">0</h3>
+    <p>Active Patrols</p>
+  </div>
+
+  <div class="patrol-stat-card">
+    <i class="fa-solid fa-circle-check"></i>
+    <h3 id="completedPatrolCountTop">0</h3>
+    <p>Completed Patrols</p>
+  </div>
+
+  <div class="patrol-stat-card">
+    <i class="fa-solid fa-map-location-dot"></i>
+    <h3>Live</h3>
+    <p>Map Status</p>
+  </div>
+
+  <div class="patrol-stat-card">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <h3 id="sosAlertCount">0</h3>
+    <p>SOS Alerts</p>
+  </div>
+</section>
+
+    <section class="patrol-main-grid">
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>ASSIGN PATROL</span>
+          <strong>COMMAND</strong>
+        </div>
+
+        <form id="patrolForm" class="admin-form">
+          <label>Patrol Leader</label>
+          <select id="patrolLeader" required>
+            <option value="">Select patrol leader</option>
+          </select>
+
+          <label>Patrol Members</label>
+          <select id="patrolMembers" multiple size="5" required>
+          </select>
+
+          <label>Patrol Title</label>
+<input
+  type="text"
+  id="title"
+  placeholder="Example: Sector A Routine Patrol"
+  required
+/>
+
+<label>Patrol Area</label>
+<input
+  type="text"
+  id="area"
+  placeholder="Example: Sector A"
+  required
+/>
+
+<label>Mission Objective</label>
+<textarea
+  id="objective"
+  placeholder="Enter mission objective"
+  required
+></textarea>
+
+<label>Mission Priority</label>
+<select id="priority">
+  <option value="low">Low</option>
+  <option value="medium" selected>Medium</option>
+  <option value="high">High</option>
+  <option value="critical">Critical</option>
+</select>
+
+<label>Mission Type</label>
+<select id="missionType">
+  <option value="routine_patrol">Routine Patrol</option>
+  <option value="reconnaissance">Reconnaissance</option>
+  <option value="security_sweep">Security Sweep</option>
+  <option value="emergency_response">Emergency Response</option>
+  <option value="search_and_rescue">Search & Rescue</option>
+</select>
+
+<label>Start Time</label>
+<input type="datetime-local" id="startTime" required />
+
+<label>End Time</label>
+<input type="datetime-local" id="endTime" required />
+
+          <button type="submit">
+            <i class="fa-solid fa-location-arrow"></i>
+            Assign Patrol
+          </button>
+        </form>
+      </div>
+
+      <div class="admin-panel map-panel">
+        <div class="panel-header">
+          <span>LIVE PATROL MAP</span>
+          <strong>COMING SOON</strong>
+        </div>
+
+        <div class="admin-map">
+          <div class="radar-circle"></div>
+          <div class="radar-ring ring-1"></div>
+          <div class="radar-ring ring-2"></div>
+          <div class="radar-ring ring-3"></div>
+          <div class="radar-sweep"></div>
+
+          <div class="unit-dot alpha"></div>
+          <div class="unit-dot bravo"></div>
+          <div class="unit-dot charlie"></div>
+
+          <div class="unit-label alpha-label">ALPHA-01</div>
+          <div class="unit-label bravo-label">BRAVO-02</div>
+          <div class="unit-label charlie-label">CHARLIE-03</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="admin-panel">
+        <div class="panel-header">
+          <span>ONGOING PATROLS</span>
+          <strong id="activePatrolCount">0</strong>
+        </div>
+
+        <div id="patrolList" class="patrol-list">
+          <div class="patrol-toolbar">
+  <input type="text" id="patrolSearch" placeholder="Search patrol..." />
+  <select id="patrolStatusFilter">
+    <option value="">All Status</option>
+    <option value="active">Active</option>
+    <option value="completed">Completed</option>
+  </select>
+</div>
+          <p>Loading patrols...</p>
+        </div>
+      </div>
+      <div class="admin-panel">
+  <div class="panel-header">
+    <span>COMPLETED PATROLS</span>
+    <strong id="completedPatrolCount">0</strong>
+  </div>
+
+  <div id="completedPatrolList" class="patrol-list">
+    <p>No completed patrols yet.</p>
+  </div>
+</div>
+    </section>
+
+
+  </main>
+
+  <div id="adminLogsModal" class="patrol-modal">
+  <div class="patrol-modal-content">
+    <span onclick="closeAdminLogsModal()" class="close-modal">&times;</span>
+
+    <div class="modal-header">
+      <h2>Patrol Activity Logs</h2>
+      <p id="adminLogTitle">Selected Patrol</p>
+    </div>
+
+    <div class="mission-card admin-patrol-log-card">
+      <h3>Activity Timeline</h3>
+      <div id="adminPatrolLogs">
+        <p>Loading logs...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="teamCompositionModal" class="patrol-modal">
+  <div class="patrol-modal-content">
+
+    <span
+      onclick="closeTeamModal()"
+      class="close-modal"
+    >
+      &times;
+    </span>
+
+    <div class="modal-header">
+      <h2>Patrol Team Composition</h2>
+      <p id="teamMissionTitle">
+        Selected Patrol
+      </p>
+    </div>
+
+    <div id="teamCompositionContent">
+      <p>Loading patrol team...</p>
+    </div>
+
+  </div>
+</div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/role-guard.js"></script>
+<script>
+  requireRoles(["admin", "commander"]);
+  applyRoleMenu();
+</script>
+<script src="js/patrol-management.js"></script>
+<script src="js/admin-sos-alert.js"></script>
+</body>
+</html>
