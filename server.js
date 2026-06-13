@@ -111,18 +111,24 @@ io.on("connection", (socket) => {
     const latency = Number(data.latency) || 0;
     const networkType = data.networkType || "unknown";
 
+    const userId = String(data.userId);
+
     console.log("Telemetry received:", {
-      userId: data.userId,
+      userId,
       latitude,
       longitude,
       accuracy,
       latency,
     });
 
-    socket.userId = data.userId;
+    socket.userId = userId;
 
-    onlineUsers.set(data.userId, {
-      userId: data.userId,
+    const currentOnlineUser = onlineUsers.get(userId);
+    const socketIds = currentOnlineUser?.socketIds || new Set();
+    socketIds.add(socket.id);
+
+    onlineUsers.set(userId, {
+      userId,
       signalStrength,
       latency,
       networkType,
@@ -130,6 +136,7 @@ io.on("connection", (socket) => {
       longitude,
       accuracy,
       socketId: socket.id,
+      socketIds,
       lastSeen: new Date(),
     });
 
@@ -147,15 +154,15 @@ io.on("connection", (socket) => {
       updateData.accuracy = accuracy;
     }
 
-    await User.findByIdAndUpdate(data.userId, updateData);
+    await User.findByIdAndUpdate(userId, updateData);
 
-    const user = await User.findById(data.userId).select(
+    const user = await User.findById(userId).select(
       "name email role isOnline signalStrength latency networkType latitude longitude accuracy lastSeen"
     );
 
     const livePayload = {
-      userId: data.userId,
-      _id: data.userId,
+      userId,
+      _id: userId,
       name: user?.name || "User",
       email: user?.email || "",
       role: user?.role || "user",
@@ -238,6 +245,21 @@ socket.on("command-message", (data) => {
   socket.on("disconnect", async () => {
     try {
       if (socket.userId) {
+        const onlineUser = onlineUsers.get(socket.userId);
+
+        if (onlineUser?.socketIds) {
+          onlineUser.socketIds.delete(socket.id);
+        }
+
+        if (onlineUser?.socketIds?.size > 0) {
+          onlineUsers.set(socket.userId, onlineUser);
+          sendDashboardStats();
+
+          console.log("Disconnected:", socket.id);
+          console.log("Online Users:", onlineUsers.size);
+          return;
+        }
+
         onlineUsers.delete(socket.userId);
 
         const disconnectedUser = await User.findByIdAndUpdate(socket.userId, {

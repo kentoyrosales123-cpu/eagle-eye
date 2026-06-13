@@ -796,6 +796,21 @@ const assignedCommander = document.getElementById("assignedCommander").value;
 
 const socket = io();
 
+function emitUserOnline(telemetryData) {
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+
+    socket.emit("user-online", telemetryData, finish);
+    setTimeout(finish, 5000);
+  });
+}
+
 async function getLatency() {
   const start = performance.now();
 
@@ -842,24 +857,16 @@ async function sendTelemetry() {
 
 console.log("Sending telemetry:", telemetryData);
 
-socket.emit("user-online", telemetryData);
-
-setTimeout(() => {
-  resolve();
-}, 800);
+emitUserOnline(telemetryData).then(resolve);
       },
       (error) => {
 
-        socket.emit("user-online", {
+        emitUserOnline({
   userId: user._id || user.id,
   signalStrength,
   latency,
   networkType,
-});
-
-setTimeout(() => {
-  resolve();
-}, 800);
+}).then(resolve);
       },
       {
         enableHighAccuracy: true,
@@ -987,12 +994,11 @@ async function startLiveMonitoring() {
   loadUsers(); // load table immediately
 
   await sendTelemetry();
-
-  setTimeout(loadUsers, 800);
+  await loadUsers();
 
   setInterval(async () => {
     await sendTelemetry();
-    setTimeout(loadUsers, 800);
+    await loadUsers();
   }, 15000);
 }
 
