@@ -176,8 +176,8 @@ if (invalidPersonnel) {
 exports.getPatrols = async (req, res) => {
   try {
     const patrols = await Patrol.find()
-      .populate("assignedUsers", "name email role rank isOnline latitude longitude signalStrength latency")
-      .populate("patrolLeader", "name email role rank isOnline latitude longitude signalStrength latency")
+      .populate("assignedUsers", "name email role rank isOnline latitude longitude accuracy signalStrength latency")
+      .populate("patrolLeader", "name email role rank isOnline latitude longitude accuracy signalStrength latency")
       .populate("createdBy", "name email")
       .sort({ createdAt: -1 });
 
@@ -203,8 +203,8 @@ exports.getActivePatrols = async (req, res) => {
   ],
 },
     })
-      .populate("assignedUsers", "name email role rank isOnline latitude longitude signalStrength latency")
-      .populate("patrolLeader", "name email role rank isOnline latitude longitude signalStrength latency")
+      .populate("assignedUsers", "name email role rank isOnline latitude longitude accuracy signalStrength latency")
+      .populate("patrolLeader", "name email role rank isOnline latitude longitude accuracy signalStrength latency")
       .sort({ createdAt: -1 });
 
     res.json(patrols);

@@ -108,6 +108,11 @@ assignedCommander: {
       default: null,
     },
 
+    accuracy: {
+      type: Number,
+      default: null,
+    },
+
     lastSeen: {
       type: Date,
       default: Date.now,

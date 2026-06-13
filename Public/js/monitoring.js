@@ -96,6 +96,7 @@ const socket = io();
 
 let monitoringMap;
 let unitMarkers = {};
+let unitAccuracyCircles = {};
 
 function initMonitoringMap() {
   monitoringMap = L.map("monitoringMap").setView([7.0731, 125.6128], 12);
@@ -185,14 +186,38 @@ function renderUnitMarkers(users) {
   trackedUsers.forEach((u) => {
     const id = u._id || u.id;
     const position = [Number(u.latitude), Number(u.longitude)];
+    const accuracy = Number(u.accuracy);
+    const validAccuracy =
+      Number.isFinite(accuracy) && accuracy > 0 ? accuracy : null;
+    const accuracyText = validAccuracy ? `${Math.round(validAccuracy)} m` : "Unknown";
 
     const popup = `
       <strong>${u.rank || "PVT"} ${u.name}</strong><br>
       Role: ${u.role}<br>
       Signal: ${u.signalStrength || 0}%<br>
       Latency: ${u.latency || 0}ms<br>
+      Accuracy: ${accuracyText}<br>
       Patrol: ${u.patrolStatus || "Available"}
     `;
+
+    if (validAccuracy) {
+      if (unitAccuracyCircles[id]) {
+        unitAccuracyCircles[id].setLatLng(position);
+        unitAccuracyCircles[id].setRadius(validAccuracy);
+      } else {
+        unitAccuracyCircles[id] = L.circle(position, {
+          radius: validAccuracy,
+          color: "#38bdf8",
+          weight: 1,
+          opacity: 0.8,
+          fillColor: "#38bdf8",
+          fillOpacity: 0.12,
+        }).addTo(monitoringMap);
+      }
+    } else if (unitAccuracyCircles[id]) {
+      monitoringMap.removeLayer(unitAccuracyCircles[id]);
+      delete unitAccuracyCircles[id];
+    }
 
     if (unitMarkers[id]) {
       unitMarkers[id].setLatLng(position);
@@ -201,6 +226,22 @@ function renderUnitMarkers(users) {
       unitMarkers[id] = L.marker(position)
         .addTo(monitoringMap)
         .bindPopup(popup);
+    }
+  });
+
+  Object.keys(unitMarkers).forEach((id) => {
+    const stillTracked = trackedUsers.some(
+      (u) => String(u._id || u.id) === String(id)
+    );
+
+    if (!stillTracked) {
+      monitoringMap.removeLayer(unitMarkers[id]);
+      delete unitMarkers[id];
+    }
+
+    if (!stillTracked && unitAccuracyCircles[id]) {
+      monitoringMap.removeLayer(unitAccuracyCircles[id]);
+      delete unitAccuracyCircles[id];
     }
   });
 }

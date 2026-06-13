@@ -127,6 +127,8 @@ let fullscreenMap;
 
 let markers = {};
 let fullscreenMarkers = {};
+let accuracyCircles = {};
+let fullscreenAccuracyCircles = {};
 
 let trails = {};
 let trailPaths = {};
@@ -415,16 +417,26 @@ function renderUsers(users) {
   }
 
   users.forEach((u) => {
-    const coordinates = u.latitude && u.longitude
+    const isOnline = Boolean(u.isOnline);
+
+    const coordinates = isOnline && u.latitude && u.longitude
       ? `
         <span>${u.latitude.toFixed(6)}</span>
         <span>${u.longitude.toFixed(6)}</span>
       `
-      : "No location";
+      : "";
 
-    const lastSeen = u.lastSeen
+    const signalStrength = isOnline && u.signalStrength !== null && u.signalStrength !== undefined
+      ? `${u.signalStrength}%`
+      : "";
+
+    const latency = isOnline && u.latency !== null && u.latency !== undefined
+      ? `${u.latency} ms`
+      : "";
+
+    const lastSeen = isOnline && u.lastSeen
       ? new Date(u.lastSeen).toLocaleString()
-      : "Never";
+      : "";
 
     usersTableBody.innerHTML += `
       <tr>
@@ -445,8 +457,8 @@ function renderUsers(users) {
           </span>
         </td>
         <td>
-          <span class="${u.isOnline ? "online-badge" : "offline-badge"}">
-            ${u.isOnline ? "Online" : "Offline"}
+          <span class="${isOnline ? "online-badge" : "offline-badge"}">
+            ${isOnline ? "Online" : "Offline"}
           </span>
         </td>
         <td>
@@ -461,8 +473,8 @@ function renderUsers(users) {
           </span>
         </td>
         <td class="coordinates-cell">${coordinates}</td>
-        <td class="metric-cell">${u.signalStrength || 0}%</td>
-        <td class="metric-cell">${u.latency || 0} ms</td>
+        <td class="metric-cell">${signalStrength}</td>
+        <td class="metric-cell">${latency}</td>
         <td class="last-seen-cell">${lastSeen}</td>
         <td>
   <div class="table-action-group">
@@ -545,8 +557,45 @@ function updateUserTrail(userId, latLng) {
   }
 }
 
+function getLocationAccuracy(userData) {
+  const accuracy = Number(userData.accuracy || userData.location?.accuracy);
+
+  return Number.isFinite(accuracy) && accuracy > 0 ? accuracy : null;
+}
+
+function upsertAccuracyCircle(circleStore, targetMap, userId, latLng, accuracy) {
+  if (!targetMap) return;
+
+  if (!accuracy) {
+    if (circleStore[userId]) {
+      targetMap.removeLayer(circleStore[userId]);
+      delete circleStore[userId];
+    }
+
+    return;
+  }
+
+  if (circleStore[userId]) {
+    circleStore[userId].setLatLng(latLng);
+    circleStore[userId].setRadius(accuracy);
+    return;
+  }
+
+  circleStore[userId] = L.circle(latLng, {
+    radius: accuracy,
+    color: "#38bdf8",
+    weight: 1,
+    opacity: 0.8,
+    fillColor: "#38bdf8",
+    fillOpacity: 0.12,
+  }).addTo(targetMap);
+}
+
 function updateFullscreenMapUser(u, selectedIcon, newLatLng) {
   if (!fullscreenMap || !mapModal.classList.contains("show")) return;
+
+  const accuracy = getLocationAccuracy(u);
+  const accuracyText = accuracy ? `${Math.round(accuracy)} m` : "Unknown";
 
   if (fullscreenMarkers[u._id]) {
     fullscreenMarkers[u._id].setIcon(selectedIcon);
@@ -566,11 +615,20 @@ function updateFullscreenMapUser(u, selectedIcon, newLatLng) {
       <b>Signal:</b> ${u.signalStrength || 0}%<br>
       <b>Latency:</b> ${u.latency || 0} ms<br>
       <b>Network:</b> ${u.networkType || "unknown"}<br>
+      <b>Accuracy:</b> ${accuracyText}<br>
       <b>Coordinates:</b><br>
       ${Number(u.latitude).toFixed(6)},
       ${Number(u.longitude).toFixed(6)}
     </div>
   `);
+
+  upsertAccuracyCircle(
+    fullscreenAccuracyCircles,
+    fullscreenMap,
+    u._id,
+    newLatLng,
+    accuracy
+  );
 
   if (trails[u._id]) {
     if (fullscreenTrailPaths[u._id]) {
@@ -605,7 +663,11 @@ function renderMapUsers(users) {
     }
 
     const newLatLng = [Number(u.latitude), Number(u.longitude)];
+    const accuracy = getLocationAccuracy(u);
+    const accuracyText = accuracy ? `${Math.round(accuracy)} m` : "Unknown";
+
     updateUserTrail(u._id, newLatLng);
+    upsertAccuracyCircle(accuracyCircles, map, u._id, newLatLng, accuracy);
 
     if (markers[u._id]) {
       markers[u._id].setIcon(selectedIcon);
@@ -625,6 +687,7 @@ function renderMapUsers(users) {
         <b>Signal:</b> ${u.signalStrength || 0}%<br>
         <b>Latency:</b> ${u.latency || 0} ms<br>
         <b>Network:</b> ${u.networkType || "unknown"}<br>
+        <b>Accuracy:</b> ${accuracyText}<br>
         <b>Coordinates:</b><br>
         ${Number(u.latitude).toFixed(6)},
         ${Number(u.longitude).toFixed(6)}
@@ -654,9 +717,19 @@ updateFullscreenMapUser(u, selectedIcon, newLatLng);
     delete trailPaths[id];
   }
 
+  if (accuracyCircles[id]) {
+    map.removeLayer(accuracyCircles[id]);
+    delete accuracyCircles[id];
+  }
+
   if (fullscreenMarkers[id]) {
     fullscreenMap?.removeLayer(fullscreenMarkers[id]);
     delete fullscreenMarkers[id];
+  }
+
+  if (fullscreenAccuracyCircles[id]) {
+    fullscreenMap?.removeLayer(fullscreenAccuracyCircles[id]);
+    delete fullscreenAccuracyCircles[id];
   }
 
   if (fullscreenTrailPaths[id]) {
@@ -764,6 +837,7 @@ async function sendTelemetry() {
   networkType,
   latitude: Number(position.coords.latitude),
   longitude: Number(position.coords.longitude),
+  accuracy: Number(position.coords.accuracy),
 };
 
 console.log("Sending telemetry:", telemetryData);

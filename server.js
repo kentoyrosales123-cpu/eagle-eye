@@ -83,15 +83,29 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const latitude =
+    const latitudeValue =
       data.latitude !== undefined && data.latitude !== null && data.latitude !== ""
         ? Number(data.latitude)
         : null;
 
-    const longitude =
+    const longitudeValue =
       data.longitude !== undefined && data.longitude !== null && data.longitude !== ""
         ? Number(data.longitude)
         : null;
+
+    const accuracyValue =
+      data.accuracy !== undefined && data.accuracy !== null && data.accuracy !== ""
+        ? Number(data.accuracy)
+        : null;
+
+    const latitude =
+      Number.isFinite(latitudeValue) ? latitudeValue : null;
+
+    const longitude =
+      Number.isFinite(longitudeValue) ? longitudeValue : null;
+
+    const accuracy =
+      Number.isFinite(accuracyValue) && accuracyValue > 0 ? accuracyValue : null;
 
     const signalStrength = Number(data.signalStrength) || 0;
     const latency = Number(data.latency) || 0;
@@ -101,6 +115,7 @@ io.on("connection", (socket) => {
       userId: data.userId,
       latitude,
       longitude,
+      accuracy,
       latency,
     });
 
@@ -113,6 +128,7 @@ io.on("connection", (socket) => {
       networkType,
       latitude,
       longitude,
+      accuracy,
       socketId: socket.id,
       lastSeen: new Date(),
     });
@@ -128,12 +144,13 @@ io.on("connection", (socket) => {
     if (latitude !== null && longitude !== null) {
       updateData.latitude = latitude;
       updateData.longitude = longitude;
+      updateData.accuracy = accuracy;
     }
 
     await User.findByIdAndUpdate(data.userId, updateData);
 
     const user = await User.findById(data.userId).select(
-      "name email role isOnline signalStrength latency networkType latitude longitude lastSeen"
+      "name email role isOnline signalStrength latency networkType latitude longitude accuracy lastSeen"
     );
 
     const livePayload = {
@@ -148,6 +165,7 @@ io.on("connection", (socket) => {
       networkType,
       latitude,
       longitude,
+      accuracy,
       updatedAt: new Date(),
     };
 
@@ -222,10 +240,37 @@ socket.on("command-message", (data) => {
       if (socket.userId) {
         onlineUsers.delete(socket.userId);
 
-        await User.findByIdAndUpdate(socket.userId, {
+        const disconnectedUser = await User.findByIdAndUpdate(socket.userId, {
           isOnline: false,
-          lastSeen: new Date(),
-        });
+          signalStrength: null,
+          latency: null,
+          networkType: "unknown",
+          latitude: null,
+          longitude: null,
+          accuracy: null,
+          lastSeen: null,
+        }).select("name email role");
+
+        const offlinePayload = {
+          userId: socket.userId,
+          _id: socket.userId,
+          name: disconnectedUser?.name || "User",
+          email: disconnectedUser?.email || "",
+          role: disconnectedUser?.role || "user",
+          isOnline: false,
+          signalStrength: null,
+          latency: null,
+          networkType: "unknown",
+          latitude: null,
+          longitude: null,
+          accuracy: null,
+          lastSeen: null,
+          updatedAt: new Date(),
+        };
+
+        io.emit("patrol-location-update", offlinePayload);
+        io.emit("user-location-update", offlinePayload);
+        io.emit("user-online-update", offlinePayload);
       }
 
       sendDashboardStats();

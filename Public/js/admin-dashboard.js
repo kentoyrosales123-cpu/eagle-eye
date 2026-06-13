@@ -142,6 +142,7 @@ async function sendTelemetry() {
         networkType,
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
       });
     },
     () => {
@@ -175,6 +176,39 @@ socket.on("dashboardStats", (data) => {
 
 let dashboardMap;
 let markers = {};
+let accuracyCircles = {};
+
+function getLocationAccuracy(userData) {
+  const accuracy = Number(userData.accuracy || userData.location?.accuracy);
+
+  return Number.isFinite(accuracy) && accuracy > 0 ? accuracy : null;
+}
+
+function upsertAccuracyCircle(userId, position, accuracy) {
+  if (!accuracy) {
+    if (accuracyCircles[userId]) {
+      dashboardMap.removeLayer(accuracyCircles[userId]);
+      delete accuracyCircles[userId];
+    }
+
+    return;
+  }
+
+  if (accuracyCircles[userId]) {
+    accuracyCircles[userId].setLatLng(position);
+    accuracyCircles[userId].setRadius(accuracy);
+    return;
+  }
+
+  accuracyCircles[userId] = L.circle(position, {
+    radius: accuracy,
+    color: "#38bdf8",
+    weight: 1,
+    opacity: 0.8,
+    fillColor: "#38bdf8",
+    fillOpacity: 0.12,
+  }).addTo(dashboardMap);
+}
 
 function initDashboardMap() {
   if (dashboardMap) return;
@@ -210,18 +244,50 @@ function getUserLatLng(userData) {
 }
 
 function updateLiveMarker(userData) {
-  const position = getUserLatLng(userData);
-  if (!position) return;
-
   const userId = userData.userId || userData._id || userData.id;
+
+  if (userData.isOnline === false) {
+    if (markers[userId]) {
+      dashboardMap.removeLayer(markers[userId]);
+      delete markers[userId];
+    }
+
+    if (accuracyCircles[userId]) {
+      dashboardMap.removeLayer(accuracyCircles[userId]);
+      delete accuracyCircles[userId];
+    }
+
+    return;
+  }
+
+  const position = getUserLatLng(userData);
+  if (!position) {
+    if (markers[userId]) {
+      dashboardMap.removeLayer(markers[userId]);
+      delete markers[userId];
+    }
+
+    if (accuracyCircles[userId]) {
+      dashboardMap.removeLayer(accuracyCircles[userId]);
+      delete accuracyCircles[userId];
+    }
+
+    return;
+  }
+
+  const accuracy = getLocationAccuracy(userData);
+  const accuracyText = accuracy ? `${Math.round(accuracy)} m` : "Unknown";
 
   const popup = `
     <b>${userData.name || "User"}</b><br>
     Status: ${userData.isOnline ? "Online" : "Offline"}<br>
     Signal: ${userData.signalStrength || 0}%<br>
+    Accuracy: ${accuracyText}<br>
     Lat: ${position[0]}<br>
     Lng: ${position[1]}
   `;
+
+  upsertAccuracyCircle(userId, position, accuracy);
 
   if (markers[userId]) {
     markers[userId].setLatLng(position);

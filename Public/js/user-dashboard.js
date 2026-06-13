@@ -137,6 +137,7 @@ async function sendTelemetry() {
     (position) => {
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
 
       document.getElementById("locationStatus").innerText =
         "GPS Location Active";
@@ -151,6 +152,7 @@ async function sendTelemetry() {
         networkType,
         latitude,
         longitude,
+        accuracy,
       });
     },
     () => {
