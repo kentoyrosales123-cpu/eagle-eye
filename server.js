@@ -127,14 +127,21 @@ io.on("connection", (socket) => {
     const socketIds = currentOnlineUser?.socketIds || new Set();
     socketIds.add(socket.id);
 
+    const nextLatitude =
+      latitude !== null ? latitude : currentOnlineUser?.latitude ?? null;
+    const nextLongitude =
+      longitude !== null ? longitude : currentOnlineUser?.longitude ?? null;
+    const nextAccuracy =
+      accuracy !== null ? accuracy : currentOnlineUser?.accuracy ?? null;
+
     onlineUsers.set(userId, {
       userId,
       signalStrength,
       latency,
       networkType,
-      latitude,
-      longitude,
-      accuracy,
+      latitude: nextLatitude,
+      longitude: nextLongitude,
+      accuracy: nextAccuracy,
       socketId: socket.id,
       socketIds,
       lastSeen: new Date(),
@@ -160,6 +167,13 @@ io.on("connection", (socket) => {
       "name email role isOnline signalStrength latency networkType latitude longitude accuracy lastSeen"
     );
 
+    const payloadLatitude =
+      latitude !== null ? latitude : user?.latitude ?? nextLatitude;
+    const payloadLongitude =
+      longitude !== null ? longitude : user?.longitude ?? nextLongitude;
+    const payloadAccuracy =
+      accuracy !== null ? accuracy : user?.accuracy ?? nextAccuracy;
+
     const livePayload = {
       userId,
       _id: userId,
@@ -170,9 +184,9 @@ io.on("connection", (socket) => {
       signalStrength,
       latency,
       networkType,
-      latitude,
-      longitude,
-      accuracy,
+      latitude: payloadLatitude,
+      longitude: payloadLongitude,
+      accuracy: payloadAccuracy,
       updatedAt: new Date(),
     };
 
