@@ -39,6 +39,9 @@ if (profileRole) {
 }
 
 const socket = io();
+let latestPosition = null;
+let watchId = null;
+let gpsErrorShown = false;
 
 socket.on("patrol-started", async (data) => {
   await loadDashboardPatrolStatus();
@@ -111,64 +114,126 @@ async function getLatency() {
   }
 }
 
-async function sendTelemetry() {
-  if (!user || !(user._id || user.id)) return;
-
-  const latency = await getLatency();
-
+function getNetworkType() {
   const connection =
     navigator.connection ||
     navigator.mozConnection ||
     navigator.webkitConnection;
 
-  const networkType = connection?.effectiveType || "wifi";
+  return connection?.effectiveType || "wifi";
+}
 
-  let signalStrength = 100;
+function getSignalStrength(latency) {
+  if (latency > 300) return 50;
+  if (latency > 200) return 70;
+  if (latency > 100) return 85;
 
-  if (latency > 300) signalStrength = 50;
-  else if (latency > 200) signalStrength = 70;
-  else if (latency > 100) signalStrength = 85;
+  return 100;
+}
+
+function getGpsErrorMessage(error) {
+  if (error.code === error.PERMISSION_DENIED) {
+    return "Location permission denied";
+  }
+
+  if (error.code === error.POSITION_UNAVAILABLE) {
+    return "GPS unavailable";
+  }
+
+  if (error.code === error.TIMEOUT) {
+    return "GPS still searching";
+  }
+
+  return "GPS error";
+}
+
+function updateLocationDisplay(position) {
+  const latitude = position.coords.latitude;
+  const longitude = position.coords.longitude;
+  const accuracy = position.coords.accuracy;
+
+  latestPosition = {
+    latitude,
+    longitude,
+    accuracy,
+    timestamp: new Date(),
+  };
+
+  document.getElementById("locationStatus").innerText =
+    `GPS Location Active (${Math.round(accuracy)}m)`;
+
+  document.getElementById("latitude").innerText = latitude.toFixed(6);
+  document.getElementById("longitude").innerText = longitude.toFixed(6);
+}
+
+async function sendTelemetry(position = null) {
+  if (!user || !(user._id || user.id)) return;
+
+  const latency = await getLatency();
+  const networkType = getNetworkType();
+  const signalStrength = getSignalStrength(latency);
 
   document.getElementById("signalStrength").innerText = signalStrength + "%";
   document.getElementById("networkType").innerText = networkType;
   document.getElementById("latency").innerText = latency + "ms";
 
-  navigator.geolocation.getCurrentPosition(
+  const telemetryData = {
+    userId: user._id || user.id,
+    signalStrength,
+    latency,
+    networkType,
+  };
+
+  const positionSource = position || latestPosition;
+
+  if (positionSource?.coords) {
+    telemetryData.latitude = positionSource.coords.latitude;
+    telemetryData.longitude = positionSource.coords.longitude;
+    telemetryData.accuracy = positionSource.coords.accuracy;
+  } else if (positionSource) {
+    telemetryData.latitude = positionSource.latitude;
+    telemetryData.longitude = positionSource.longitude;
+    telemetryData.accuracy = positionSource.accuracy;
+  }
+
+  socket.emit("user-online", telemetryData);
+}
+
+function startLocationTracking() {
+  if (watchId !== null) return;
+
+  if (!navigator.geolocation) {
+    document.getElementById("locationStatus").innerText =
+      "GPS not supported by browser";
+    sendTelemetry();
+    return;
+  }
+
+  document.getElementById("locationStatus").innerText =
+    "Requesting GPS permission...";
+
+  watchId = navigator.geolocation.watchPosition(
     (position) => {
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      const accuracy = position.coords.accuracy;
-
-      document.getElementById("locationStatus").innerText =
-        "GPS Location Active";
-
-      document.getElementById("latitude").innerText = latitude.toFixed(6);
-      document.getElementById("longitude").innerText = longitude.toFixed(6);
-
-      socket.emit("user-online", {
-        userId: user._id || user.id,
-        signalStrength,
-        latency,
-        networkType,
-        latitude,
-        longitude,
-        accuracy,
-      });
+      gpsErrorShown = false;
+      updateLocationDisplay(position);
+      sendTelemetry(position);
     },
-    () => {
+    (error) => {
       document.getElementById("locationStatus").innerText =
-        "Location Permission Denied";
+        getGpsErrorMessage(error);
 
-      socket.emit("user-online", {
-        userId: user._id || user.id,
-        signalStrength,
-        latency,
-        networkType,
-      });
+      sendTelemetry();
+
+      if (!gpsErrorShown && error.code === error.PERMISSION_DENIED) {
+        gpsErrorShown = true;
+        alert(
+          "Please allow Location permission for this site, then refresh the page."
+        );
+      }
     },
     {
       enableHighAccuracy: true,
-      timeout: 15000,
+      timeout: 30000,
       maximumAge: 30000,
     }
   );
@@ -445,8 +510,10 @@ async function submitPatrolReport(patrolId) {
 syncCurrentUser();
 setInterval(syncCurrentUser, 5000);
 
+startLocationTracking();
 sendTelemetry();
-setInterval(sendTelemetry, 5000);
+setInterval(() => sendTelemetry(), 5000);
+socket.on("connect", () => sendTelemetry());
 
 loadDashboardPatrolStatus();
 setInterval(loadDashboardPatrolStatus, 5000);
