@@ -7,6 +7,7 @@ let patrolMap = null;
 let patrolMarker = null;
 let latestPosition = null;
 let watchId = null;
+let gpsErrorShown = false;
 
 const isPatrolLeader = user.role === "patrol_leader";
 const isPatrolMember = user.role === "patrol_member";
@@ -197,48 +198,128 @@ document.getElementById("closePatrolModal").addEventListener("click", () => {
   document.getElementById("patrolModal").style.display = "none";
 });
 
-function initPatrolMap() {
-  if (patrolMap) {
-    patrolMap.invalidateSize();
+async function getLatency() {
+  const start = performance.now();
+
+  try {
+    await fetch("/favicon.ico", { cache: "no-store" });
+    return Math.round(performance.now() - start);
+  } catch {
+    return 999;
+  }
+}
+
+function getNetworkType() {
+  const connection =
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection;
+
+  return connection?.effectiveType || "wifi";
+}
+
+function getSignalStrength(latency) {
+  if (latency > 300) return 50;
+  if (latency > 200) return 70;
+  if (latency > 100) return 85;
+
+  return 100;
+}
+
+async function sendLiveTelemetry(position) {
+  if (!user || !(user._id || user.id)) return;
+
+  const latency = await getLatency();
+  const networkType = getNetworkType();
+  const signalStrength = getSignalStrength(latency);
+
+  socket.emit("user-online", {
+    userId: user._id || user.id,
+    signalStrength,
+    latency,
+    networkType,
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+    accuracy: position.coords.accuracy,
+  });
+}
+
+function updateLocalPosition(position) {
+  const lat = position.coords.latitude;
+  const lng = position.coords.longitude;
+
+  latestPosition = {
+    lat,
+    lng,
+    accuracy: position.coords.accuracy,
+    timestamp: new Date(),
+  };
+
+  if (patrolMarker && patrolMap) {
+    patrolMarker.setLatLng([lat, lng]);
+    patrolMap.setView([lat, lng], 16);
+  }
+}
+
+function startLocationTracking() {
+  if (watchId !== null) return;
+
+  if (!navigator.geolocation) {
+    alert("GPS is not supported by this browser.");
     return;
   }
 
-  patrolMap = L.map("patrolMap").setView([7.0731, 125.6128], 15);
+  watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      gpsErrorShown = false;
+      updateLocalPosition(position);
+      sendLiveTelemetry(position);
+    },
+    (error) => {
+      console.error("GPS error:", error);
+
+      if (!gpsErrorShown) {
+        gpsErrorShown = true;
+        alert(
+          "GPS permission is required. On your phone, allow Location for this site and turn on device Location Services."
+        );
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 30000,
+      timeout: 20000,
+    }
+  );
+}
+
+function initPatrolMap() {
+  if (patrolMap) {
+    patrolMap.invalidateSize();
+
+    if (latestPosition) {
+      patrolMap.setView([latestPosition.lat, latestPosition.lng], 16);
+    }
+
+    return;
+  }
+
+  const initialPosition = latestPosition
+    ? [latestPosition.lat, latestPosition.lng]
+    : [7.0731, 125.6128];
+
+  patrolMap = L.map("patrolMap").setView(initialPosition, 15);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap",
   }).addTo(patrolMap);
 
-  patrolMarker = L.marker([7.0731, 125.6128])
+  patrolMarker = L.marker(initialPosition)
     .addTo(patrolMap)
     .bindPopup("Your Current Position")
     .openPopup();
 
-  watchId = navigator.geolocation.watchPosition(
-    (position) => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-
-      latestPosition = {
-        lat,
-        lng,
-        accuracy: position.coords.accuracy,
-        timestamp: new Date(),
-      };
-
-      patrolMarker.setLatLng([lat, lng]);
-      patrolMap.setView([lat, lng], 16);
-    },
-    (error) => {
-      console.error("GPS error:", error);
-      alert("GPS permission is required for live patrol tracking.");
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 5000,
-      timeout: 10000,
-    }
-  );
+  startLocationTracking();
 }
 
 document.getElementById("checkInBtn").addEventListener("click", async () => {
@@ -627,3 +708,4 @@ document.getElementById("submitReportBtn").addEventListener("click", async () =>
 
 loadMyPatrol();
 setInterval(loadMyPatrol, 5000);
+startLocationTracking();

@@ -155,8 +155,8 @@ async function sendTelemetry() {
     },
     {
       enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 10000,
+      timeout: 15000,
+      maximumAge: 30000,
     }
   );
 }
