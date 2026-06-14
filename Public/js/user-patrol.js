@@ -226,22 +226,31 @@ function getSignalStrength(latency) {
   return 100;
 }
 
-async function sendLiveTelemetry(position) {
+async function sendPresenceTelemetry(position = null) {
   if (!user || !(user._id || user.id)) return;
 
   const latency = await getLatency();
   const networkType = getNetworkType();
   const signalStrength = getSignalStrength(latency);
 
-  socket.emit("user-online", {
+  const telemetryData = {
     userId: user._id || user.id,
     signalStrength,
     latency,
     networkType,
-    latitude: position.coords.latitude,
-    longitude: position.coords.longitude,
-    accuracy: position.coords.accuracy,
-  });
+  };
+
+  if (position) {
+    telemetryData.latitude = position.coords.latitude;
+    telemetryData.longitude = position.coords.longitude;
+    telemetryData.accuracy = position.coords.accuracy;
+  } else if (latestPosition) {
+    telemetryData.latitude = latestPosition.lat;
+    telemetryData.longitude = latestPosition.lng;
+    telemetryData.accuracy = latestPosition.accuracy;
+  }
+
+  socket.emit("user-online", telemetryData);
 }
 
 function updateLocalPosition(position) {
@@ -273,7 +282,7 @@ function startLocationTracking() {
     (position) => {
       gpsErrorShown = false;
       updateLocalPosition(position);
-      sendLiveTelemetry(position);
+      sendPresenceTelemetry(position);
     },
     (error) => {
       console.error("GPS error:", error);
@@ -708,4 +717,7 @@ document.getElementById("submitReportBtn").addEventListener("click", async () =>
 
 loadMyPatrol();
 setInterval(loadMyPatrol, 5000);
+sendPresenceTelemetry();
+setInterval(sendPresenceTelemetry, 5000);
+socket.on("connect", sendPresenceTelemetry);
 startLocationTracking();
