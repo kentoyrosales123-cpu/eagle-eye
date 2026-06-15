@@ -633,6 +633,8 @@ exports.addPatrolLog = async (req, res) => {
   "checkpoint",
   "sos",
   "sos_acknowledged",
+  "backup_dispatched",
+  "sos_resolved",
   "patrol_ended",
   "note",
 ];
@@ -667,12 +669,16 @@ const leaderAllowedTypes = [
   "checkpoint",
   "sos",
   "note",
+  "backup_dispatched",
+  "sos_resolved",
   "patrol_ended",
 ];
 
 const memberAllowedTypes = [
   "checkpoint",
   "sos",
+  "backup_dispatched",
+  "sos_resolved",
   "note",
 ];
 
