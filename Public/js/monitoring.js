@@ -97,6 +97,129 @@ const socket = io();
 let monitoringMap;
 let unitMarkers = {};
 let unitAccuracyCircles = {};
+let patrolRouteLines = {};
+let emergencyAlerts = [];
+let allActivePatrols = [];
+
+function renderEmergencyAlerts() {
+  const list = document.getElementById("emergencyAlertList");
+  const count = document.getElementById("activeAlerts");
+
+  if (count) count.innerText = emergencyAlerts.length;
+
+  if (!list) return;
+
+  if (!emergencyAlerts.length) {
+    list.innerHTML = `<p>No emergency alerts.</p>`;
+    return;
+  }
+
+  list.innerHTML = emergencyAlerts
+    .map((alert) => {
+      const time = new Date(alert.timestamp || Date.now()).toLocaleTimeString();
+
+      return `
+  <div class="emergency-alert-card">
+
+    <div class="alert-header">
+      <strong>🚨 SOS ALERT</strong>
+
+      <span class="alert-time">
+        ${time}
+      </span>
+    </div>
+
+    <p>
+      ${alert.message || "Emergency alert received."}
+    </p>
+
+    <small>
+      Patrol:
+      ${alert.patrolTitle || "Unknown"}
+
+      |
+
+      User:
+      ${alert.user?.name || alert.name || "Unknown"}
+    </small>
+
+    <div class="alert-actions">
+      <button
+        class="acknowledge-btn"
+        onclick="acknowledgeSOS(
+          '${alert.userId || alert.user?._id}'
+        )"
+      >
+        ✅ ACKNOWLEDGE SOS
+      </button>
+    </div>
+
+  </div>
+`;
+    })
+    .join("");
+}
+
+function acknowledgeSOS(userId) {
+  socket.emit("sos-acknowledged", {
+    userId,
+    message:
+      "COMMAND RECEIVED YOUR SOS. Stay in position. Assistance is being coordinated.",
+    time: new Date(),
+  });
+
+  alert("SOS acknowledgment sent to patrol team.");
+}
+
+async function loadEmergencyAlerts() {
+  try {
+    const res = await fetch("/api/patrols/active-sos-alerts", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const alerts = await res.json();
+
+    if (!res.ok) {
+      console.error("Load emergency alerts failed:", alerts.message);
+      renderEmergencyAlerts();
+      return;
+    }
+
+    emergencyAlerts = alerts;
+    renderEmergencyAlerts();
+  } catch (error) {
+    console.error("Load emergency alerts error:", error);
+    renderEmergencyAlerts();
+  }
+}
+
+function renderPatrolRoutes(patrols) {
+  patrols.forEach((patrol) => {
+    const route = patrol.routeHistory || [];
+
+    if (route.length < 2) return;
+
+    const coordinates = route
+      .filter((point) => point.lat && point.lng)
+      .map((point) => [point.lat, point.lng]);
+
+    if (coordinates.length < 2) return;
+
+    const patrolId = patrol._id || patrol.id;
+
+    if (patrolRouteLines[patrolId]) {
+      patrolRouteLines[patrolId].setLatLngs(coordinates);
+    } else {
+      patrolRouteLines[patrolId] = L.polyline(coordinates, {
+        color: "#d4af37",
+        weight: 4,
+        opacity: 0.85,
+      }).addTo(monitoringMap);
+    }
+  });
+}
 
 function initMonitoringMap() {
   monitoringMap = L.map("monitoringMap").setView([7.0731, 125.6128], 12);
@@ -121,8 +244,6 @@ async function loadUnits() {
     const users = await res.json();
 
     renderUnitStats(users);
-    renderUnitList(users);
-    renderUnitMarkers(users);
   } catch (error) {
     console.error("Load monitoring users error:", error);
   }
@@ -148,35 +269,6 @@ function renderUnitStats(users) {
     new Date().toLocaleTimeString();
 }
 
-function renderUnitList(users) {
-  const list = document.getElementById("unitStatusList");
-
-  const onlineUsers = users.filter((u) => u.isOnline);
-
-  if (!onlineUsers.length) {
-    list.innerHTML = `<p>No online units.</p>`;
-    return;
-  }
-
-  list.innerHTML = onlineUsers
-    .map(
-      (u) => `
-        <div class="monitoring-unit-card">
-          <div>
-            <h3>${u.rank || "PVT"} ${u.name}</h3>
-            <p>${u.role || "patrol_member"}</p>
-            <small>
-              Signal: ${u.signalStrength || 0}% |
-              Latency: ${u.latency || 0}ms
-            </small>
-          </div>
-
-          <span class="online-badge">ONLINE</span>
-        </div>
-      `
-    )
-    .join("");
-}
 
 function renderUnitMarkers(users) {
   const trackedUsers = users.filter(
@@ -192,13 +284,24 @@ function renderUnitMarkers(users) {
     const accuracyText = validAccuracy ? `${Math.round(validAccuracy)} m` : "Unknown";
 
     const popup = `
-      <strong>${u.rank || "PVT"} ${u.name}</strong><br>
-      Role: ${u.role}<br>
-      Signal: ${u.signalStrength || 0}%<br>
-      Latency: ${u.latency || 0}ms<br>
-      Accuracy: ${accuracyText}<br>
-      Patrol: ${u.patrolStatus || "Available"}
-    `;
+  <strong>${u.rank || "PVT"} ${u.name}</strong><br>
+  Role: ${u.role}<br>
+  Unit: ${u.unit || "N/A"}<br>
+  Team: ${u.team || "N/A"}<br>
+  Patrol: ${u.patrolTitle || "Available"}<br>
+  Tactical Status: ${
+    !u.isOnline
+      ? "OFFLINE"
+      : u.tacticalStatus === "emergency"
+      ? "EMERGENCY"
+      : u.tacticalStatus === "idle"
+      ? "IDLE"
+      : "ACTIVE"
+  }<br>
+  Signal: ${u.signalStrength || 0}%<br>
+  Latency: ${u.latency || 0}ms<br>
+  Accuracy: ${accuracyText}
+`;
 
     if (validAccuracy) {
       if (unitAccuracyCircles[id]) {
@@ -246,13 +349,279 @@ function renderUnitMarkers(users) {
   });
 }
 
-socket.on("user-location-update", loadUnits);
-socket.on("user-online-update", loadUnits);
-socket.on("patrol-location-update", loadUnits);
+async function loadActivePatrolGroups() {
+  try {
+    const res = await fetch("/api/patrols/active", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const patrols = await res.json();
+
+    const activePatrolsCard = document.getElementById("activePatrols");
+
+if (activePatrolsCard) {
+  activePatrolsCard.innerText = patrols.length;
+}
+
+    allActivePatrols = patrols;
+
+populatePatrolFilters(patrols);
+applyPatrolFilters();
+  } catch (error) {
+    console.error("Load patrol groups error:", error);
+  }
+}
+
+function populatePatrolFilters(patrols) {
+  const unitFilter = document.getElementById("unitFilter");
+  const teamFilter = document.getElementById("teamFilter");
+
+  if (!unitFilter || !teamFilter) return;
+
+  const currentUnit = unitFilter.value;
+  const currentTeam = teamFilter.value;
+
+  const units = [...new Set(patrols.map((p) => p.unit).filter(Boolean))];
+  const teams = [...new Set(patrols.map((p) => p.team).filter(Boolean))];
+
+  unitFilter.innerHTML =
+    `<option value="">All Units</option>` +
+    units.map((unit) => `<option value="${unit}">${unit}</option>`).join("");
+
+  teamFilter.innerHTML =
+    `<option value="">All Patrol Teams</option>` +
+    teams.map((team) => `<option value="${team}">${team}</option>`).join("");
+
+  unitFilter.value = currentUnit;
+  teamFilter.value = currentTeam;
+}
+
+function applyPatrolFilters() {
+  const unit = document.getElementById("unitFilter")?.value || "";
+  const team = document.getElementById("teamFilter")?.value || "";
+  const status = document.getElementById("statusFilter")?.value || "";
+  const online = document.getElementById("onlineFilter")?.value || "";
+
+  let filteredPatrols = allActivePatrols.filter((patrol) => {
+    const personnel = [
+      patrol.patrolLeader,
+      ...(patrol.assignedUsers || []),
+    ].filter(Boolean);
+
+    const hasOnline = personnel.some((p) => p.isOnline);
+    const hasOffline = personnel.some((p) => !p.isOnline);
+
+    return (
+      (!unit || patrol.unit === unit) &&
+      (!team || patrol.team === team) &&
+      (!status || patrol.status === status) &&
+      (!online ||
+        (online === "online" && hasOnline) ||
+        (online === "offline" && hasOffline))
+    );
+  });
+
+  renderPatrolGroups(filteredPatrols);
+  renderPatrolTeamMarkers(filteredPatrols);
+  renderPatrolRoutes(filteredPatrols);
+}
+
+function clearPatrolFilters() {
+  document.getElementById("unitFilter").value = "";
+  document.getElementById("teamFilter").value = "";
+  document.getElementById("statusFilter").value = "";
+  document.getElementById("onlineFilter").value = "";
+
+  applyPatrolFilters();
+}
+
+function renderPatrolGroups(patrols) {
+  const list = document.getElementById("patrolGroupList");
+
+  if (!patrols.length) {
+    list.innerHTML = `<p>No active patrol groups.</p>`;
+    return;
+  }
+
+  list.innerHTML = patrols
+    .map((patrol) => {
+      const leader = patrol.patrolLeader;
+      const members = patrol.assignedUsers || [];
+
+      return `
+  <div class="tactical-patrol-card">
+
+    <div class="tactical-header">
+      <div>
+        <h3>
+          🛡 ${patrol.team || "UNASSIGNED"}
+        </h3>
+
+        <p class="mission-name">
+          ${patrol.title}
+        </p>
+      </div>
+
+      <span class="status-badge ${patrol.status}">
+        ${patrol.status.toUpperCase()}
+      </span>
+    </div>
+
+    <div class="tactical-divider"></div>
+
+    <div class="tactical-meta">
+      <div>
+        <span>📍 UNIT</span>
+        <strong>${patrol.unit || "N/A"}</strong>
+      </div>
+
+      <div>
+        <span>👨‍✈️ LEADER</span>
+        <strong>
+          ${
+            leader
+              ? `${leader.rank || ""} ${leader.name}`
+              : "No Leader"
+          }
+        </strong>
+      </div>
+    </div>
+
+    <div class="member-section">
+      <div class="member-title">
+        👥 TEAM MEMBERS
+      </div>
+
+      ${
+        members.length
+          ? members
+              .map(
+                (m) => `
+              <div class="member-row">
+                <span class="member-name">
+                  ${m.rank || ""} ${m.name}
+                </span>
+
+                <span class="${
+  !m.isOnline
+    ? "member-offline"
+    : m.tacticalStatus === "emergency"
+    ? "member-emergency"
+    : m.tacticalStatus === "idle"
+    ? "member-idle"
+    : "member-online"
+}">
+  ${
+    !m.isOnline
+      ? "⚫ OFFLINE"
+      : m.tacticalStatus === "emergency"
+      ? "🔴 EMERGENCY"
+      : m.tacticalStatus === "idle"
+      ? "🟡 IDLE"
+      : "🟢 ACTIVE"
+  }
+</span>
+                </span>
+              </div>
+            `
+              )
+              .join("")
+          : `<p>No members assigned</p>`
+      }
+    </div>
+
+    <div class="tactical-footer">
+      <span>📡 GPS LINKED</span>
+      <span>🛰 LIVE TRACKING</span>
+    </div>
+
+  </div>
+`;
+    })
+    .join("");
+}
+
+function renderPatrolTeamMarkers(patrols) {
+  const allPersonnel = [];
+
+  patrols.forEach((patrol) => {
+    if (patrol.patrolLeader) {
+      allPersonnel.push({
+        ...patrol.patrolLeader,
+        patrolTitle: patrol.title,
+        team: patrol.team,
+        unit: patrol.unit,
+        patrolStatus: patrol.status,
+        isLeader: true,
+      });
+    }
+
+    (patrol.assignedUsers || []).forEach((member) => {
+      allPersonnel.push({
+        ...member,
+        patrolTitle: patrol.title,
+        team: patrol.team,
+        unit: patrol.unit,
+        patrolStatus: patrol.status,
+        isLeader: false,
+      });
+    });
+  });
+
+  renderUnitMarkers(allPersonnel);
+}
+
+socket.on("user-location-update", () => {
+  loadUnits();
+  loadActivePatrolGroups();
+});
+
+socket.on("sos-alert", (data) => {
+  emergencyAlerts.unshift(data);
+
+  if (emergencyAlerts.length > 10) {
+    emergencyAlerts = emergencyAlerts.slice(0, 10);
+  }
+
+  renderEmergencyAlerts();
+});
+
+socket.on("user-online-update", () => {
+  loadUnits();
+  loadActivePatrolGroups();
+});
+
+socket.on("patrol-location-update", () => {
+  loadUnits();
+  loadActivePatrolGroups();
+});
+
+socket.on("patrol-route-updated", (data) => {
+  loadActivePatrolGroups();
+});
+
+socket.on("patrol-status-updated", loadActivePatrolGroups);
+socket.on("patrol-started", loadActivePatrolGroups);
 
 document.addEventListener("DOMContentLoaded", () => {
   initMonitoringMap();
   loadUnits();
+loadActivePatrolGroups();
+loadEmergencyAlerts();
 
-  setInterval(loadUnits, 10000);
+["unitFilter", "teamFilter", "statusFilter", "onlineFilter"].forEach((id) => {
+  const filter = document.getElementById(id);
+
+  if (filter) {
+    filter.addEventListener("change", applyPatrolFilters);
+  }
+});
+
+setInterval(() => {
+  loadUnits();
+  loadActivePatrolGroups();
+  loadEmergencyAlerts();
+}, 10000);
 });

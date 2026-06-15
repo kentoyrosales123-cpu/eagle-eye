@@ -5908,3 +5908,296 @@ body.compact-mode .admin-main {
   margin-bottom: 10px;
   border: 1px solid rgba(255,255,255,0.1);
 }
+
+/* ==========================
+   TACTICAL PATROL CARD
+========================== */
+
+.tactical-patrol-card {
+  padding: 18px;
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(47,79,47,.22),
+      rgba(0,0,0,.55)
+    );
+
+  border: 1px solid rgba(212,175,55,.18);
+
+  backdrop-filter: blur(14px);
+
+  box-shadow:
+    0 10px 25px rgba(0,0,0,.25);
+
+  transition: .3s ease;
+}
+
+.tactical-patrol-card:hover {
+  transform: translateY(-4px);
+
+  border-color:
+    rgba(212,175,55,.5);
+
+  box-shadow:
+    0 0 24px
+    rgba(212,175,55,.12);
+}
+
+.tactical-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.tactical-header h3 {
+  color: #f5f5dc;
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
+.mission-name {
+  color: #d4af37;
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+.status-badge {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-badge.active {
+  background:
+    rgba(0,255,100,.18);
+  color: #7dffb2;
+}
+
+.status-badge.ready {
+  background:
+    rgba(255,193,7,.18);
+  color: #ffd86a;
+}
+
+.status-badge.completed {
+  background:
+    rgba(120,120,120,.18);
+  color: #d3d3d3;
+}
+
+.tactical-divider {
+  margin: 16px 0;
+  border-top:
+    1px solid rgba(212,175,55,.15);
+}
+
+.tactical-meta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.tactical-meta span {
+  display: block;
+  color: #8aa89a;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.tactical-meta strong {
+  color: #f5f5dc;
+}
+
+.member-section {
+  margin-top: 18px;
+}
+
+.member-title {
+  color: #d4af37;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.member-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 10px 12px;
+  margin-bottom: 8px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(255,255,255,.03);
+}
+
+.member-name {
+  color: #f5f5dc;
+}
+
+.member-online {
+  color: #6dff8e;
+  font-weight: bold;
+}
+
+.member-offline {
+  color: #a9a9a9;
+}
+
+.tactical-footer {
+  display: flex;
+  justify-content: space-between;
+
+  margin-top: 18px;
+  padding-top: 14px;
+
+  border-top:
+    1px solid rgba(212,175,55,.15);
+
+  color: #9cb4a7;
+  font-size: 12px;
+}
+
+.admin-card.danger i {
+  color: #ff4d4d;
+}
+
+.emergency-panel {
+  margin-top: 22px;
+}
+
+.emergency-alert-list {
+  display: grid;
+  gap: 12px;
+}
+
+.emergency-alert-card {
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(120, 20, 20, 0.35);
+  border: 1px solid rgba(255, 80, 80, 0.35);
+}
+
+.emergency-alert-card strong {
+  color: #ff6b6b;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.emergency-alert-card p {
+  color: #f5f5dc;
+  margin-bottom: 6px;
+}
+
+.emergency-alert-card small {
+  color: #d8b0b0;
+}
+
+.alert-actions {
+  margin-top: 14px;
+}
+
+.acknowledge-btn {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+
+  padding: 12px;
+
+  border-radius: 12px;
+
+  font-weight: bold;
+
+  background:
+    linear-gradient(
+      135deg,
+      #1b8f4a,
+      #0d5e2f
+    );
+
+  color: white;
+
+  transition: .3s ease;
+}
+
+.acknowledge-btn:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 0 15px
+    rgba(60,255,120,.25);
+}
+
+.tactical-filter-panel {
+  margin-bottom: 22px;
+}
+
+.tactical-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.tactical-filter-grid select,
+.clear-filter-btn {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(212,175,55,.25);
+  background: rgba(0,0,0,.45);
+  color: #f5f5dc;
+  outline: none;
+}
+
+.clear-filter-btn {
+  cursor: pointer;
+  font-weight: bold;
+  background: linear-gradient(135deg, #7b1f1f, #541313);
+}
+
+@media (max-width: 1100px) {
+  .tactical-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.member-emergency {
+  color: #ff4d4d;
+  font-weight: bold;
+}
+
+.member-idle {
+  color: #ffd24d;
+  font-weight: bold;
+}
+
+.member-online {
+  color: #65ff8c;
+  font-weight: bold;
+}
+
+.member-offline {
+  color: #9a9a9a;
+}
+
+.member-emergency {
+  color: #ff4d4d;
+  font-weight: bold;
+}
+
+.member-idle {
+  color: #ffd24d;
+  font-weight: bold;
+}
+
+.member-online {
+  color: #65ff8c;
+  font-weight: bold;
+}
+
+.member-offline {
+  color: #9a9a9a;
+}

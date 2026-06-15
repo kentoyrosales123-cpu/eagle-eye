@@ -207,7 +207,18 @@ exports.getActivePatrols = async (req, res) => {
       .populate("patrolLeader", "name email role rank isOnline latitude longitude accuracy signalStrength latency")
       .sort({ createdAt: -1 });
 
-    res.json(patrols);
+    const patrolsWithRouteHistory = patrols.map((patrol) => {
+      const patrolData = patrol.toObject();
+
+      return {
+        ...patrolData,
+        routeHistory: Array.isArray(patrolData.routeHistory)
+          ? patrolData.routeHistory
+          : [],
+      };
+    });
+
+    res.json(patrolsWithRouteHistory);
 
   } catch (error) {
     console.error(
@@ -218,6 +229,63 @@ exports.getActivePatrols = async (req, res) => {
     res.status(500).json({
       message:
         "Server error while getting patrols.",
+    });
+  }
+};
+
+// GET ACTIVE SOS ALERTS
+exports.getActiveSosAlerts = async (req, res) => {
+  try {
+    const patrols = await Patrol.find({
+      "logs.type": "sos",
+    })
+      .populate("logs.user", "name email role")
+      .sort({ updatedAt: -1 });
+
+    const alerts = [];
+
+    patrols.forEach((patrol) => {
+      const logs = [...(patrol.logs || [])].sort((a, b) => {
+        return new Date(a.timestamp) - new Date(b.timestamp);
+      });
+
+      let latestOpenSos = null;
+
+      logs.forEach((log) => {
+        if (log.type === "sos") {
+          latestOpenSos = log;
+        }
+
+        if (log.type === "sos_acknowledged") {
+          latestOpenSos = null;
+        }
+      });
+
+      if (!latestOpenSos) return;
+
+      alerts.push({
+        alertId: latestOpenSos._id,
+        patrolId: patrol._id,
+        patrolTitle: patrol.title,
+        area: patrol.area,
+        message: latestOpenSos.message,
+        lat: latestOpenSos.lat,
+        lng: latestOpenSos.lng,
+        timestamp: latestOpenSos.timestamp,
+        status: "active",
+        user: latestOpenSos.user || null,
+      });
+    });
+
+    alerts.sort((a, b) => {
+      return new Date(b.timestamp) - new Date(a.timestamp);
+    });
+
+    res.json(alerts);
+  } catch (error) {
+    console.error("Get active SOS alerts error:", error);
+    res.status(500).json({
+      message: "Server error while getting active SOS alerts.",
     });
   }
 };
@@ -626,16 +694,27 @@ if (!isCommandRole && !isAssigned && !isAssignedLeader) {
   });
 }
 
-    patrol.logs.push({
+    const logEntry = {
       user: req.user._id,
       type,
       message,
       lat,
       lng,
       timestamp: new Date(),
-    });
+    };
 
-    await patrol.save();
+    const updatedPatrol = await Patrol.findByIdAndUpdate(
+      patrol._id,
+      {
+        $push: {
+          logs: logEntry,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     // REAL-TIME SOS ALERT
 if (type === "sos") {
@@ -692,7 +771,7 @@ if (type === "sos_acknowledged") {
 
     res.status(201).json({
       message: "Patrol log saved successfully.",
-      logs: patrol.logs,
+      logs: updatedPatrol.logs,
     });
     
   } catch (error) {

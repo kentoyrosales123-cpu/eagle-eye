@@ -715,6 +715,23 @@ document.getElementById("submitReportBtn").addEventListener("click", async () =>
   }
 });
 
+socket.on("sos-acknowledged", (data) => {
+  const currentUser =
+    user._id || user.id;
+
+  if (data.userId !== currentUser)
+    return;
+
+  alert(
+    "✅ COMMAND RECEIVED YOUR SOS\n\n" +
+    "Stay in position. Assistance is being coordinated."
+  );
+
+  addPatrolLog(
+    "✅ Command Center acknowledged SOS."
+  );
+});
+
 loadMyPatrol();
 setInterval(loadMyPatrol, 5000);
 sendPresenceTelemetry();

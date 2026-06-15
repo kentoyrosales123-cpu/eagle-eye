@@ -8,6 +8,8 @@
 
   const socket = io();
   let intervalId = null;
+  let watchId = null;
+  let latestPosition = null;
 
   async function getLatency() {
     const start = performance.now();
@@ -37,17 +39,50 @@
     return 100;
   }
 
+  function startLocationTracking() {
+    if (watchId !== null || !navigator.geolocation) return;
+
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        latestPosition = {
+          latitude: Number(position.coords.latitude),
+          longitude: Number(position.coords.longitude),
+          accuracy: Number(position.coords.accuracy),
+        };
+
+        sendPresence();
+      },
+      (error) => {
+        console.warn("Presence GPS unavailable:", error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 30000,
+        maximumAge: 30000,
+      }
+    );
+  }
+
   async function sendPresence() {
     const latency = await getLatency();
 
-    socket.emit("user-online", {
+    const telemetryData = {
       userId: user._id || user.id,
       signalStrength: getSignalStrength(latency),
       latency,
       networkType: getNetworkType(),
-    });
+    };
+
+    if (latestPosition) {
+      telemetryData.latitude = latestPosition.latitude;
+      telemetryData.longitude = latestPosition.longitude;
+      telemetryData.accuracy = latestPosition.accuracy;
+    }
+
+    socket.emit("user-online", telemetryData);
   }
 
+  startLocationTracking();
   socket.on("connect", sendPresence);
   sendPresence();
 
@@ -55,5 +90,8 @@
 
   window.addEventListener("beforeunload", () => {
     if (intervalId) clearInterval(intervalId);
+    if (watchId !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
+    }
   });
 })();

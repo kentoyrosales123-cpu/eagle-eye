@@ -123,9 +123,27 @@ io.on("connection", (socket) => {
 
     socket.userId = userId;
 
+    const now = new Date();
     const currentOnlineUser = onlineUsers.get(userId);
     const socketIds = currentOnlineUser?.socketIds || new Set();
     socketIds.add(socket.id);
+
+    const hasLocation = latitude !== null && longitude !== null;
+    const previousLatitude = currentOnlineUser?.latitude ?? null;
+    const previousLongitude = currentOnlineUser?.longitude ?? null;
+    const hasPreviousLocation =
+      previousLatitude !== null && previousLongitude !== null;
+    const locationChanged =
+      hasLocation &&
+      (!hasPreviousLocation ||
+        Number(previousLatitude).toFixed(6) !== Number(latitude).toFixed(6) ||
+        Number(previousLongitude).toFixed(6) !== Number(longitude).toFixed(6));
+    const noMovement =
+      hasLocation && hasPreviousLocation && !locationChanged;
+    const nextLastMovedAt =
+      locationChanged
+        ? now
+        : currentOnlineUser?.lastMovedAt ?? (hasLocation ? now : null);
 
     const nextLatitude =
       latitude !== null ? latitude : currentOnlineUser?.latitude ?? null;
@@ -144,7 +162,8 @@ io.on("connection", (socket) => {
       accuracy: nextAccuracy,
       socketId: socket.id,
       socketIds,
-      lastSeen: new Date(),
+      lastSeen: now,
+      lastMovedAt: nextLastMovedAt,
     });
 
     const updateData = {
@@ -152,7 +171,8 @@ io.on("connection", (socket) => {
       signalStrength,
       latency,
       networkType,
-      lastSeen: new Date(),
+      lastSeen: now,
+      tacticalStatus: "active",
     };
 
     if (latitude !== null && longitude !== null) {
@@ -161,11 +181,59 @@ io.on("connection", (socket) => {
       updateData.accuracy = accuracy;
     }
 
+if (noMovement) {
+  const idleMinutes =
+    nextLastMovedAt
+      ? (Date.now() - new Date(nextLastMovedAt).getTime()) /
+        1000 /
+        60
+      : 0;
+
+  if (idleMinutes >= 2) {
+    updateData.tacticalStatus = "idle";
+  }
+}
+
     await User.findByIdAndUpdate(userId, updateData);
 
-    const user = await User.findById(userId).select(
-      "name email role isOnline signalStrength latency networkType latitude longitude accuracy lastSeen"
+    if (locationChanged) {
+  const activePatrol = await Patrol.findOne({
+    status: { $in: ["active", "on_hold"] },
+    $or: [
+      { patrolLeader: userId },
+      { assignedUsers: userId },
+    ],
+  });
+
+  if (activePatrol) {
+    const routePoint = {
+      lat: latitude,
+      lng: longitude,
+      timestamp: new Date(),
+    };
+
+    const updatedPatrol = await Patrol.findByIdAndUpdate(
+      activePatrol._id,
+      {
+        $push: {
+          routeHistory: routePoint,
+        },
+      },
+      {
+        new: true,
+      }
     );
+
+    io.emit("patrol-route-updated", {
+      patrolId: activePatrol._id,
+      routeHistory: updatedPatrol?.routeHistory || [],
+    });
+  }
+}
+
+    const user = await User.findById(userId).select(
+  "name email role isOnline signalStrength latency networkType latitude longitude accuracy lastSeen tacticalStatus"
+);
 
     const payloadLatitude =
       latitude !== null ? latitude : user?.latitude ?? nextLatitude;
@@ -188,6 +256,7 @@ io.on("connection", (socket) => {
       longitude: payloadLongitude,
       accuracy: payloadAccuracy,
       updatedAt: new Date(),
+      tacticalStatus: updateData.tacticalStatus,
     };
 
     /*
@@ -214,10 +283,20 @@ io.on("connection", (socket) => {
     }
   }
 });
-socket.on("sos-alert", (data) => {
+socket.on("sos-alert", async (data) => {
   console.log("SOS ALERT RECEIVED:", data);
 
   activeAlertCount++;
+
+  if (data.userId) {
+  await User.findByIdAndUpdate(
+    data.userId,
+    {
+      tacticalStatus:
+        "emergency",
+    }
+  );
+}
 
   io.emit("sos-alert", {
     ...data,
@@ -226,6 +305,27 @@ socket.on("sos-alert", (data) => {
 
   sendDashboardStats();
 });
+
+socket.on(
+  "sos-acknowledged",
+  async (data) => {
+
+    if (data.userId) {
+      await User.findByIdAndUpdate(
+        data.userId,
+        {
+          tacticalStatus:
+            "active",
+        }
+      );
+    }
+
+    io.emit(
+      "sos-acknowledged",
+      data
+    );
+  }
+);
 
 socket.on("incident-alert", (data) => {
   console.log("INCIDENT ALERT RECEIVED:", data);
@@ -285,6 +385,7 @@ socket.on("command-message", (data) => {
           longitude: null,
           accuracy: null,
           lastSeen: null,
+          tacticalStatus: "offline",
         }).select("name email role");
 
         const offlinePayload = {
@@ -302,6 +403,7 @@ socket.on("command-message", (data) => {
           accuracy: null,
           lastSeen: null,
           updatedAt: new Date(),
+          tacticalStatus: "offline",
         };
 
         io.emit("patrol-location-update", offlinePayload);

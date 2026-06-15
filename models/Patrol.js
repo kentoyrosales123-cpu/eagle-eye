@@ -49,7 +49,14 @@ cancelReason: {
 
 team: {
   type: String,
-  default: "Team 1",
+  enum: [
+    "Alpha Patrol",
+    "Bravo Patrol",
+    "Charlie Patrol",
+    "Delta Patrol",
+    "Echo Patrol",
+  ],
+  default: "Alpha Patrol",
 },
 
     assignedUsers: [

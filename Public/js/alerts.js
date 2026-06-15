@@ -110,6 +110,31 @@ function saveAlerts() {
   localStorage.setItem("alertHistory", JSON.stringify(alertHistory));
 }
 
+async function loadActiveAlerts() {
+  try {
+    const res = await fetch("/api/patrols/active-sos-alerts", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const alerts = await res.json();
+
+    if (!res.ok) {
+      console.error("Load active alerts failed:", alerts.message);
+      renderAlerts();
+      return;
+    }
+
+    activeAlerts = alerts;
+    saveAlerts();
+    renderAlerts();
+  } catch (error) {
+    console.error("Load active alerts error:", error);
+    renderAlerts();
+  }
+}
+
 function renderAlerts() {
   const activeAlertCount = document.getElementById("activeAlertCount");
   const acknowledgedCount = document.getElementById("acknowledgedCount");
@@ -225,17 +250,45 @@ socket.on("sos-alert", (data) => {
   renderAlerts();
 });
 
-function acknowledgeAlert(alertId) {
-  const alert = activeAlerts.find(
+async function acknowledgeAlert(alertId) {
+  const alertData = activeAlerts.find(
     (a) => String(a.alertId || a.patrolId) === String(alertId)
   );
 
-  if (!alert) return;
+  if (!alertData) return;
 
-  alert.status = "acknowledged";
+  if (alertData.patrolId) {
+    try {
+      const res = await fetch(`/api/patrols/${alertData.patrolId}/logs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type: "sos_acknowledged",
+          message: "SOS received by command center. Backup is coming.",
+          lat: alertData.lat || null,
+          lng: alertData.lng || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        window.alert(data.message || "Failed to acknowledge alert.");
+        return;
+      }
+    } catch (error) {
+      console.error("Acknowledge alert error:", error);
+      window.alert("Server error while acknowledging alert.");
+      return;
+    }
+  }
+
+  alertData.status = "acknowledged";
 
   alertHistory.unshift({
-    ...alert,
+    ...alertData,
     status: "acknowledged",
     timestamp: new Date(),
     message: `Acknowledged by ${user.name}`,
@@ -278,13 +331,10 @@ function clearAllAlerts() {
 }
 
 function refreshAlerts() {
-  activeAlerts =
-    JSON.parse(localStorage.getItem("activeSosAlerts")) || [];
-
   alertHistory =
     JSON.parse(localStorage.getItem("alertHistory")) || [];
 
-  renderAlerts();
+  loadActiveAlerts();
 }
 
 function openAlertMap(lat, lng) {
@@ -343,4 +393,4 @@ function exportAlertLogs() {
   URL.revokeObjectURL(url);
 }
 
-document.addEventListener("DOMContentLoaded", renderAlerts);
+document.addEventListener("DOMContentLoaded", loadActiveAlerts);

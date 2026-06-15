@@ -112,7 +112,60 @@
           <small>Monitoring refresh</small>
         </div>
       </div>
+      <div class="admin-card danger">
+  <i class="fa-solid fa-triangle-exclamation"></i>
+  <div>
+    <h3 id="activeAlerts">0</h3>
+    <p>Emergency Alerts</p>
+    <small>Live SOS incidents</small>
+  </div>
+</div>
+
+<div class="admin-card">
+  <i class="fa-solid fa-person-military-rifle"></i>
+  <div>
+    <h3 id="activePatrols">0</h3>
+    <p>Active Patrols</p>
+    <small>Ongoing operations</small>
+  </div>
+</div>
     </section>
+
+    <section class="admin-panel tactical-filter-panel">
+  <div class="panel-header">
+    <span>PATROL FILTERS</span>
+    <strong>TACTICAL SORT</strong>
+  </div>
+
+  <div class="tactical-filter-grid">
+    <select id="unitFilter">
+      <option value="">All Units</option>
+    </select>
+
+    <select id="teamFilter">
+      <option value="">All Patrol Teams</option>
+    </select>
+
+    <select id="statusFilter">
+      <option value="">All Status</option>
+      <option value="scheduled">Scheduled</option>
+      <option value="ready">Ready</option>
+      <option value="active">Active</option>
+      <option value="on_hold">On Hold</option>
+      <option value="pending_acknowledgement">Pending Acknowledgement</option>
+    </select>
+
+    <select id="onlineFilter">
+      <option value="">All Personnel</option>
+      <option value="online">Online Only</option>
+      <option value="offline">Offline Only</option>
+    </select>
+
+    <button onclick="clearPatrolFilters()" class="clear-filter-btn">
+      Clear Filters
+    </button>
+  </div>
+</section>
 
     <section class="monitoring-command-grid">
       <div class="admin-panel monitoring-map-panel">
@@ -126,15 +179,25 @@
 
       <div class="admin-panel">
         <div class="panel-header">
-          <span>ONLINE UNITS</span>
+          <span>TACTICAL PATROL GROUPS</span>
           <strong>STATUS</strong>
         </div>
 
-        <div id="unitStatusList" class="monitoring-unit-list">
-          <p>Loading units...</p>
-        </div>
+        <div id="patrolGroupList" class="monitoring-unit-list">
+  <p>Loading patrol groups...</p>
+</div>
       </div>
     </section>
+    <section class="admin-panel emergency-panel">
+  <div class="panel-header">
+    <span>EMERGENCY ALERTS</span>
+    <strong>LIVE SOS</strong>
+  </div>
+
+  <div id="emergencyAlertList" class="emergency-alert-list">
+    <p>No emergency alerts.</p>
+  </div>
+</section>
   </main>
 
   <script src="/socket.io/socket.io.js"></script>

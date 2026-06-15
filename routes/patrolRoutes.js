@@ -5,6 +5,7 @@ const {
   createPatrol,
   getPatrols,
   getActivePatrols,
+  getActiveSosAlerts,
   startPatrol,
   completePatrol,
   acknowledgePatrol,
@@ -58,6 +59,13 @@ router.patch(
 );
 
 router.get("/active", protect, getActivePatrols);
+
+router.get(
+  "/active-sos-alerts",
+  protect,
+  allowRoles("admin", "commander", "monitoring_officer", "communication_officer"),
+  getActiveSosAlerts
+);
 
 // USER REQUEST COMPLETE
 router.patch(

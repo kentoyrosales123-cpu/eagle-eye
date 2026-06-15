@@ -4,7 +4,35 @@ const sosSocket = window.socket || io();
 
 document.addEventListener("DOMContentLoaded", () => {
   renderPriorityIncident();
+  loadActiveSosAlerts();
 });
+
+async function loadActiveSosAlerts() {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("/api/patrols/active-sos-alerts", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const alerts = await res.json();
+
+    if (!res.ok) {
+      console.error("Load active SOS alerts failed:", alerts.message);
+      return;
+    }
+
+    activeSosAlerts = alerts;
+    selectedPriorityAlert = activeSosAlerts[0] || null;
+
+    saveActiveAlerts();
+    renderPriorityIncident();
+  } catch (error) {
+    console.error("Load active SOS alerts error:", error);
+  }
+}
 
 sosSocket.on("sos-alert", (data) => {
   console.log("ADMIN RECEIVED SOS:", data);
