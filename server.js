@@ -73,6 +73,70 @@ async function sendDashboardStats() {
 });
 }
 
+async function markUserOffline(userId) {
+  if (!userId) return null;
+
+  onlineUsers.delete(String(userId));
+
+  const disconnectedUser = await User.findByIdAndUpdate(userId, {
+    isOnline: false,
+    signalStrength: null,
+    latency: null,
+    networkType: "unknown",
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    lastSeen: null,
+    tacticalStatus: "offline",
+  }).select("name email role");
+
+  const offlinePayload = {
+    userId: String(userId),
+    _id: String(userId),
+    name: disconnectedUser?.name || "User",
+    email: disconnectedUser?.email || "",
+    role: disconnectedUser?.role || "user",
+    isOnline: false,
+    signalStrength: null,
+    latency: null,
+    networkType: "unknown",
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    lastSeen: null,
+    updatedAt: new Date(),
+    tacticalStatus: "offline",
+  };
+
+  io.emit("patrol-location-update", offlinePayload);
+  io.emit("user-location-update", offlinePayload);
+  io.emit("user-online-update", offlinePayload);
+
+  await sendDashboardStats();
+
+  return offlinePayload;
+}
+
+async function cleanupStaleOnlineUsers() {
+  try {
+    const staleCutoff = new Date(Date.now() - 45000);
+
+    const staleUsers = await User.find({
+      isOnline: true,
+      $or: [
+        { lastSeen: null },
+        { lastSeen: { $lt: staleCutoff } },
+      ],
+    }).select("_id");
+
+    await Promise.all(
+      staleUsers.map((user) => markUserOffline(user._id))
+    );
+  } catch (error) {
+    console.error("Stale online cleanup error:", error.message);
+  }
+}
+
 io.on("connection", (socket) => {
   console.log("Connected:", socket.id);
 
@@ -356,6 +420,31 @@ socket.on("command-message", (data) => {
   });
 });
 
+socket.on("user-offline", async (data, callback) => {
+  try {
+    const userId = String(data?.userId || socket.userId || "");
+
+    if (!userId) {
+      if (callback) callback({ success: false, message: "Missing userId" });
+      return;
+    }
+
+    socket.userId = userId;
+    await markUserOffline(userId);
+
+    if (callback) callback({ success: true });
+  } catch (error) {
+    console.error("User offline error:", error.message);
+
+    if (callback) {
+      callback({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+});
+
   socket.on("disconnect", async () => {
     try {
       if (socket.userId) {
@@ -374,41 +463,7 @@ socket.on("command-message", (data) => {
           return;
         }
 
-        onlineUsers.delete(socket.userId);
-
-        const disconnectedUser = await User.findByIdAndUpdate(socket.userId, {
-          isOnline: false,
-          signalStrength: null,
-          latency: null,
-          networkType: "unknown",
-          latitude: null,
-          longitude: null,
-          accuracy: null,
-          lastSeen: null,
-          tacticalStatus: "offline",
-        }).select("name email role");
-
-        const offlinePayload = {
-          userId: socket.userId,
-          _id: socket.userId,
-          name: disconnectedUser?.name || "User",
-          email: disconnectedUser?.email || "",
-          role: disconnectedUser?.role || "user",
-          isOnline: false,
-          signalStrength: null,
-          latency: null,
-          networkType: "unknown",
-          latitude: null,
-          longitude: null,
-          accuracy: null,
-          lastSeen: null,
-          updatedAt: new Date(),
-          tacticalStatus: "offline",
-        };
-
-        io.emit("patrol-location-update", offlinePayload);
-        io.emit("user-location-update", offlinePayload);
-        io.emit("user-online-update", offlinePayload);
+        await markUserOffline(socket.userId);
       }
 
       sendDashboardStats();
@@ -420,6 +475,8 @@ socket.on("command-message", (data) => {
     }
   });
 });
+
+setInterval(cleanupStaleOnlineUsers, 30000);
 
 const PORT = process.env.PORT || 5000;
 

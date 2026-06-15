@@ -7,6 +7,7 @@
   }
 
   const socket = io();
+  window.presenceSocket = socket;
   let intervalId = null;
   let watchId = null;
   let latestPosition = null;

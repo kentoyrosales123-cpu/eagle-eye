@@ -531,6 +531,17 @@ async function loadPatrolLogs() {
 }
 
 function logout() {
+  try {
+    if (user && (user._id || user.id)) {
+      socket.emit("user-offline", {
+        userId: user._id || user.id,
+      });
+      socket.disconnect();
+    }
+  } catch (error) {
+    console.error("Logout presence error:", error);
+  }
+
   localStorage.clear();
   window.location.href = "access-system.html";
 }

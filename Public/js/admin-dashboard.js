@@ -93,6 +93,17 @@ if (user && user.role !== "admin") {
 document.getElementById("adminName").innerText = user?.name || "Admin";
 
 function logout() {
+  try {
+    if (user && (user._id || user.id)) {
+      socket.emit("user-offline", {
+        userId: user._id || user.id,
+      });
+      socket.disconnect();
+    }
+  } catch (error) {
+    console.error("Logout presence error:", error);
+  }
+
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   window.location.href = "access-system.html";

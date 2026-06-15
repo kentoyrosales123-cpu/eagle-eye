@@ -85,6 +85,17 @@ if (!token || !user || !["admin", "commander"].includes(user.role)) {
 document.getElementById("adminName").innerText = user?.name || "Commander";
 
 function logout() {
+  try {
+    if (user && (user._id || user.id)) {
+      socket.emit("user-offline", {
+        userId: user._id || user.id,
+      });
+      socket.disconnect();
+    }
+  } catch (error) {
+    console.error("Logout presence error:", error);
+  }
+
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   window.location.href = "access-system.html";
