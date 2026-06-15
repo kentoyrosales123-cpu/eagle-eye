@@ -143,12 +143,14 @@ logs: [
     type: {
   type: String,
   enum: [
-    "checkpoint",
-    "sos",
-    "sos_acknowledged",
-    "patrol_ended",
-    "note",
-  ],
+  "checkpoint",
+  "sos",
+  "sos_acknowledged",
+  "backup_dispatched",
+  "sos_resolved",
+  "patrol_ended",
+  "note",
+],
   required: true,
 },
     message: {

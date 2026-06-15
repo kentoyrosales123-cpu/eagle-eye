@@ -564,6 +564,46 @@ socket.on("patrol-started", async (data) => {
   );
 });
 
+socket.on("backup-dispatched", async (data) => {
+  if (!activePatrol) return;
+  if (
+    String(data.patrolId) !==
+    String(activePatrol._id)
+  )
+    return;
+
+  await savePatrolLog(
+    "backup_dispatched",
+    "Command dispatched backup."
+  );
+
+  alert(
+    "📡 BACKUP DISPATCHED\n\nCommand has dispatched backup to your location."
+  );
+
+  loadPatrolLogs();
+});
+
+socket.on("sos-resolved", async (data) => {
+  if (!activePatrol) return;
+  if (
+    String(data.patrolId) !==
+    String(activePatrol._id)
+  )
+    return;
+
+  await savePatrolLog(
+    "sos_resolved",
+    "Command resolved the SOS incident."
+  );
+
+  alert(
+    "🟢 SOS RESOLVED\n\nCommand has marked the incident as resolved."
+  );
+
+  loadPatrolLogs();
+});
+
 socket.on("patrol-status-updated", async () => {
   await loadMyPatrol();
 });
@@ -726,22 +766,7 @@ document.getElementById("submitReportBtn").addEventListener("click", async () =>
   }
 });
 
-socket.on("sos-acknowledged", (data) => {
-  const currentUser =
-    user._id || user.id;
 
-  if (data.userId !== currentUser)
-    return;
-
-  alert(
-    "✅ COMMAND RECEIVED YOUR SOS\n\n" +
-    "Stay in position. Assistance is being coordinated."
-  );
-
-  addPatrolLog(
-    "✅ Command Center acknowledged SOS."
-  );
-});
 
 loadMyPatrol();
 setInterval(loadMyPatrol, 5000);

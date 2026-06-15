@@ -405,6 +405,53 @@ socket.on("incident-alert", (data) => {
   sendDashboardStats();
 });
 
+socket.on("dispatch-backup", (data) => {
+  io.emit("backup-dispatched", {
+    ...data,
+    timestamp: data.timestamp || new Date(),
+  });
+});
+
+socket.on("resolve-sos", async (data) => {
+
+  activeAlertCount =
+    Math.max(
+      0,
+      activeAlertCount - 1
+    );
+
+  if (data.patrolId) {
+    const patrol =
+      await Patrol.findById(
+        data.patrolId
+      );
+
+    const members = [
+      patrol?.patrolLeader,
+      ...(patrol?.assignedUsers || [])
+    ].filter(Boolean);
+
+    await User.updateMany(
+      {
+        _id: { $in: members }
+      },
+      {
+        tacticalStatus:
+          "active"
+      }
+    );
+  }
+
+  io.emit("sos-resolved", {
+    ...data,
+    timestamp:
+      data.timestamp ||
+      new Date(),
+  });
+
+  sendDashboardStats();
+});
+
 socket.on("alert-count-sync", (data) => {
   activeAlertCount = Number(data.count) || 0;
 

@@ -158,10 +158,23 @@ function renderEmergencyAlerts() {
       <button
         class="acknowledge-btn"
         onclick="acknowledgeSOS(
-          '${alert.userId || alert.user?._id}'
-        )"
+  '${alert.userId || alert.user?._id}',
+  '${alert.patrolId || alert.patrol?._id || ""}'
+)"
       >
         ✅ ACKNOWLEDGE SOS
+      </button>
+
+      <button class="acknowledge-btn" onclick="focusSOSLocation(${alert.lat}, ${alert.lng})">
+        📍 LOCATE
+      </button>
+
+      <button class="acknowledge-btn" onclick="dispatchBackup('${alert.patrolId || ""}')">
+        🚓 DISPATCH BACKUP
+      </button>
+
+      <button class="acknowledge-btn" onclick="resolveSOS('${alert.patrolId || ""}')">
+        🟢 RESOLVE
       </button>
     </div>
 
@@ -171,12 +184,42 @@ function renderEmergencyAlerts() {
     .join("");
 }
 
-function acknowledgeSOS(userId) {
+function focusSOSLocation(lat, lng) {
+  if (!lat || !lng) {
+    alert("No GPS location available for this SOS.");
+    return;
+  }
+
+  monitoringMap.flyTo([lat, lng], 17);
+}
+
+function dispatchBackup(patrolId) {
+  socket.emit("dispatch-backup", {
+    patrolId,
+    message: "Backup has been dispatched to your location.",
+    timestamp: new Date(),
+  });
+
+  alert("Backup dispatch notification sent.");
+}
+
+function resolveSOS(patrolId) {
+  socket.emit("resolve-sos", {
+    patrolId,
+    message: "SOS incident has been marked as resolved by command.",
+    timestamp: new Date(),
+  });
+
+  alert("SOS incident marked as resolved.");
+}
+
+function acknowledgeSOS(userId, patrolId = null) {
   socket.emit("sos-acknowledged", {
     userId,
+    patrolId,
     message:
       "COMMAND RECEIVED YOUR SOS. Stay in position. Assistance is being coordinated.",
-    time: new Date(),
+    timestamp: new Date(),
   });
 
   alert("SOS acknowledgment sent to patrol team.");
@@ -595,6 +638,16 @@ socket.on("sos-alert", (data) => {
   if (emergencyAlerts.length > 10) {
     emergencyAlerts = emergencyAlerts.slice(0, 10);
   }
+
+  renderEmergencyAlerts();
+});
+
+socket.on("sos-resolved", (data) => {
+  emergencyAlerts = emergencyAlerts.filter(
+    (alert) =>
+      String(alert.patrolId || "") !==
+      String(data.patrolId || "")
+  );
 
   renderEmergencyAlerts();
 });
