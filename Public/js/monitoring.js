@@ -1,6 +1,19 @@
 const token = localStorage.getItem("token");
 const user = JSON.parse(localStorage.getItem("user"));
 
+const socket = io();
+
+function requestBrowserNotificationPermission() {
+  if (!("Notification" in window)) {
+    console.warn("Browser notifications are not supported.");
+    return;
+  }
+
+  if (Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
 async function syncCurrentUser() {
   try {
     const response = await fetch(
@@ -103,14 +116,24 @@ function logout() {
   window.location.href = "access-system.html";
 }
 
-const socket = io();
-
 let monitoringMap;
 let unitMarkers = {};
 let unitAccuracyCircles = {};
 let patrolRouteLines = {};
 let emergencyAlerts = [];
 let allActivePatrols = [];
+const criticalAlertSoundPath = "/sounds/critical-alert.mp3";
+function createAlertAudio() {
+  const audio = new Audio(criticalAlertSoundPath);
+  audio.loop = true;
+  audio.preload = "auto";
+  audio.load();
+  return audio;
+}
+
+let activeAlertAudio = createAlertAudio();
+let alertSoundUnlocked = false;
+let pendingAlertSoundType = null;
 
 function renderEmergencyAlerts() {
   const list = document.getElementById("emergencyAlertList");
@@ -127,13 +150,44 @@ function renderEmergencyAlerts() {
 
   list.innerHTML = emergencyAlerts
     .map((alert) => {
-      const time = new Date(alert.timestamp || Date.now()).toLocaleTimeString();
+      const time = new Date(
+  alert.timestamp || Date.now()
+).toLocaleString();
 
       return `
-  <div class="emergency-alert-card">
+  <div class="
+  emergency-alert-card
+  ${
+    ["sos", "emergency", "enemy_contact"]
+      .includes(alert.type)
+      ? "priority-red"
+      : ["backup", "backup_request"].includes(alert.type)
+      ? "priority-orange"
+      : [
+          "patrol_delayed",
+          "lost_connection"
+        ].includes(alert.type)
+      ? "priority-yellow"
+      : ""
+  }
+">
 
     <div class="alert-header">
-      <strong>🚨 SOS ALERT</strong>
+      <strong>
+        <span class="${
+          ["sos", "emergency", "enemy_contact"].includes(alert.type)
+            ? "badge-red"
+            : ["backup", "backup_request"].includes(alert.type)
+            ? "badge-orange"
+            : "badge-yellow"
+        }">
+🚨 ${(
+  alert.type || "sos"
+)
+  .replaceAll("_", " ")
+  .toUpperCase()}
+        </span>
+      </strong>
 
       <span class="alert-time">
         ${time}
@@ -145,20 +199,30 @@ function renderEmergencyAlerts() {
     </p>
 
     <small>
-      Patrol:
-      ${alert.patrolTitle || "Unknown"}
+  Patrol:
+  ${alert.patrolTitle || "Unknown"}
 
-      |
+  |
 
-      User:
-      ${alert.user?.name || alert.name || "Unknown"}
-    </small>
+  Team:
+  ${alert.team || "Unassigned"}
+
+  |
+
+  Unit:
+  ${alert.unit || "N/A"}
+
+  |
+
+  User:
+  ${alert.user?.name || alert.name || "Unknown"}
+</small>
 
     <div class="alert-actions">
       <button
         class="acknowledge-btn"
         onclick="acknowledgeSOS(
-  '${alert.userId || alert.user?._id}',
+  '${alert.userId || alert.user?._id || alert.user?.id || ""}',
   '${alert.patrolId || alert.patrol?._id || ""}'
 )"
       >
@@ -184,6 +248,38 @@ function renderEmergencyAlerts() {
     .join("");
 }
 
+function trackEmergencyAlert(data) {
+  const alertId =
+    data.alertId ||
+    data._id ||
+    data.patrolId ||
+    data.userId ||
+    data.user?.id ||
+    data.user?._id ||
+    Date.now();
+
+  const alertData = {
+    ...data,
+    alertId,
+    timestamp: data.timestamp || new Date(),
+  };
+
+  const existingIndex = emergencyAlerts.findIndex((alert) => {
+    return String(alert.alertId || alert.patrolId || alert.userId) ===
+      String(alertId);
+  });
+
+  if (existingIndex >= 0) {
+    emergencyAlerts[existingIndex] = alertData;
+  } else {
+    emergencyAlerts.unshift(alertData);
+  }
+
+  renderEmergencyAlerts();
+showEmergencyPopup(alertData);
+showBrowserEmergencyNotification(alertData);
+}
+
 function focusSOSLocation(lat, lng) {
   if (!lat || !lng) {
     alert("No GPS location available for this SOS.");
@@ -191,6 +287,89 @@ function focusSOSLocation(lat, lng) {
   }
 
   monitoringMap.flyTo([lat, lng], 17);
+}
+
+function showEmergencyPopup(data) {
+  const existing =
+    document.getElementById("emergencyPopup");
+
+  if (existing) {
+    existing.remove();
+  }
+
+  const popup =
+    document.createElement("div");
+
+  popup.id = "emergencyPopup";
+
+  popup.innerHTML = `
+    <div class="emergency-popup-box">
+      <h2>🚨 EMERGENCY ALERT</h2>
+
+      <p>
+        <strong>Type:</strong>
+        ${(data.type || "sos")
+          .replaceAll("_", " ")
+          .toUpperCase()}
+      </p>
+
+      <p>
+        <strong>Patrol:</strong>
+        ${data.patrolTitle || "Unknown Patrol"}
+      </p>
+
+      <p>
+  <strong>Team:</strong>
+  ${data.team || "Unassigned"}
+</p>
+
+<p>
+  <strong>Unit:</strong>
+  ${data.unit || "N/A"}
+</p>
+
+      <p>
+        <strong>Personnel:</strong>
+        ${data.user?.name || "Unknown Personnel"}
+      </p>
+
+      <p>
+        <strong>Time:</strong>
+        ${new Date(
+  data.timestamp || Date.now()
+).toLocaleString()}
+      </p>
+
+      <div class="emergency-popup-actions">
+        <button onclick="focusSOSLocation(${data.lat}, ${data.lng})">
+          📍 View Location
+        </button>
+
+        <button onclick="resolveSOS('${data.patrolId || ""}')">
+          🟢 Resolve
+        </button>
+
+        <button onclick="document.getElementById('emergencyPopup').remove()">
+          Close
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  if (
+    data.lat &&
+    data.lng &&
+    monitoringMap
+  ) {
+    monitoringMap.flyTo(
+      [data.lat, data.lng],
+      18
+    );
+  }
+
+  playAlertSound(data.type);
 }
 
 function dispatchBackup(patrolId) {
@@ -203,20 +382,94 @@ function dispatchBackup(patrolId) {
   alert("Backup dispatch notification sent.");
 }
 
-function resolveSOS(patrolId) {
+async function resolveSOS(patrolId) {
+  const normalizedPatrolId =
+    patrolId && patrolId !== "undefined" ? patrolId : null;
+
+  if (!normalizedPatrolId) {
+    alert("No patrol linked to this SOS alert.");
+    return;
+  }
+
+  stopAlertSound();
+
+  try {
+    const res = await fetch(`/api/patrols/${normalizedPatrolId}/logs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        type: "sos_resolved",
+        message: "SOS incident resolved by monitoring command.",
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "Failed to resolve SOS alert.");
+      return;
+    }
+  } catch (error) {
+    console.error("Resolve SOS error:", error);
+    alert("Server error while resolving SOS alert.");
+    return;
+  }
+
   socket.emit("resolve-sos", {
-    patrolId,
+    patrolId: normalizedPatrolId,
     message: "SOS incident has been marked as resolved by command.",
     timestamp: new Date(),
   });
 
+  emergencyAlerts = emergencyAlerts.filter(
+    (alert) => String(alert.patrolId || "") !== String(normalizedPatrolId)
+  );
+  renderEmergencyAlerts();
+
   alert("SOS incident marked as resolved.");
 }
 
-function acknowledgeSOS(userId, patrolId = null) {
+async function acknowledgeSOS(userId, patrolId = null) {
+  const normalizedUserId =
+    userId && userId !== "undefined" ? userId : null;
+  const normalizedPatrolId =
+    patrolId && patrolId !== "undefined" ? patrolId : null;
+
+  stopAlertSound();
+
+  if (normalizedPatrolId) {
+    try {
+      const res = await fetch(`/api/patrols/${normalizedPatrolId}/logs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type: "sos_acknowledged",
+          message: "SOS received by monitoring command. Assistance is being coordinated.",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to acknowledge SOS alert.");
+        return;
+      }
+    } catch (error) {
+      console.error("Acknowledge SOS error:", error);
+      alert("Server error while acknowledging SOS alert.");
+      return;
+    }
+  }
+
   socket.emit("sos-acknowledged", {
-    userId,
-    patrolId,
+    userId: normalizedUserId,
+    patrolId: normalizedPatrolId,
     message:
       "COMMAND RECEIVED YOUR SOS. Stay in position. Assistance is being coordinated.",
     timestamp: new Date(),
@@ -632,17 +885,161 @@ socket.on("user-location-update", () => {
   loadActivePatrolGroups();
 });
 
-socket.on("sos-alert", (data) => {
-  emergencyAlerts.unshift(data);
+socket.on("sos-alert", trackEmergencyAlert);
+socket.on("emergency-alert", trackEmergencyAlert);
+socket.on("incident-alert", trackEmergencyAlert);
+socket.on("backup-request", trackEmergencyAlert);
+socket.on("patrol-delayed", trackEmergencyAlert);
+socket.on("lost-connection", trackEmergencyAlert);
 
-  if (emergencyAlerts.length > 10) {
-    emergencyAlerts = emergencyAlerts.slice(0, 10);
+/* Removed legacy popup renderer; all alert events use trackEmergencyAlert.
+    <div class="emergency-popup-box">
+      <h2>🚨 EMERGENCY ALERT</h2>
+
+      <p>
+        <strong>Type:</strong>
+        ${(data.type || "sos")
+  .replaceAll("_", " ")
+  .toUpperCase()}
+      </p>
+
+      <p>
+        <strong>Patrol:</strong>
+        ${data.patrolTitle || "Unknown"}
+      </p>
+
+      <p>
+        <strong>Personnel:</strong>
+        ${data.user?.name || "Unknown"}
+      </p>
+
+      <p>
+        <strong>Time:</strong>
+        ${new Date(
+          data.timestamp
+        ).toLocaleTimeString()}
+      </p>
+
+      <button onclick="focusSOSLocation(${data.lat}, ${data.lng})">
+        📍 VIEW LOCATION
+      </button>
+
+      <button onclick="this.parentElement.parentElement.remove()">
+        CLOSE
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  if (data.lat && data.lng) {
+    monitoringMap.flyTo(
+      [data.lat, data.lng],
+      18
+    );
   }
 
-  renderEmergencyAlerts();
-});
+  playAlertSound(data.type);
+}
+*/
+
+function unlockAlertSound() {
+  if (alertSoundUnlocked || !activeAlertAudio) return;
+
+  activeAlertAudio.volume = 0;
+
+  activeAlertAudio
+    .play()
+    .then(() => {
+      activeAlertAudio.pause();
+      activeAlertAudio.currentTime = 0;
+      activeAlertAudio.volume = 1;
+      alertSoundUnlocked = true;
+
+      if (pendingAlertSoundType || emergencyAlerts.length) {
+        playAlertSound(pendingAlertSoundType || "sos");
+        pendingAlertSoundType = null;
+      }
+    })
+    .catch(() => {
+      activeAlertAudio.volume = 1;
+    });
+}
+
+function playAlertSound(type = "sos") {
+  const alarmTypes = [
+    "sos",
+    "emergency",
+    "enemy_contact",
+    "backup_request",
+  ];
+  const normalizedType = String(type || "sos").toLowerCase();
+
+  if (!alarmTypes.includes(normalizedType)) return;
+
+  if (!activeAlertAudio) {
+    activeAlertAudio = createAlertAudio();
+  }
+
+  stopAlertSound();
+
+  activeAlertAudio.loop = true;
+  activeAlertAudio.volume = 1;
+  activeAlertAudio.currentTime = 0;
+
+  const tryPlay = () => {
+    activeAlertAudio
+      .play()
+      .then(() => {
+        pendingAlertSoundType = null;
+      })
+      .catch((error) => {
+        pendingAlertSoundType = normalizedType;
+
+        if (error?.name === "NotAllowedError") {
+          console.log("Alert sound blocked until the page is clicked.");
+        } else {
+          console.log("Alert sound could not start:", error?.message || error);
+        }
+      });
+  };
+
+  if (activeAlertAudio.readyState < 2) {
+    let didTryPlay = false;
+    const tryPlayOnce = () => {
+      if (didTryPlay) return;
+      didTryPlay = true;
+      tryPlay();
+    };
+
+    activeAlertAudio.addEventListener("canplay", tryPlayOnce, {
+      once: true,
+    });
+    activeAlertAudio.addEventListener("canplaythrough", tryPlayOnce, {
+      once: true,
+    });
+    activeAlertAudio.load();
+    setTimeout(tryPlayOnce, 600);
+    return;
+  }
+
+  tryPlay();
+}
+
+function stopAlertSound() {
+  pendingAlertSoundType = null;
+
+  if (!activeAlertAudio) return;
+
+  activeAlertAudio.pause();
+  activeAlertAudio.currentTime = 0;
+}
+
+
 
 socket.on("sos-resolved", (data) => {
+  stopAlertSound();
+
   emergencyAlerts = emergencyAlerts.filter(
     (alert) =>
       String(alert.patrolId || "") !==
@@ -650,6 +1047,10 @@ socket.on("sos-resolved", (data) => {
   );
 
   renderEmergencyAlerts();
+});
+
+socket.on("sos-acknowledged", (data) => {
+  stopAlertSound();
 });
 
 socket.on("user-online-update", () => {
@@ -670,10 +1071,14 @@ socket.on("patrol-status-updated", loadActivePatrolGroups);
 socket.on("patrol-started", loadActivePatrolGroups);
 
 document.addEventListener("DOMContentLoaded", () => {
+  requestBrowserNotificationPermission();
   initMonitoringMap();
   loadUnits();
 loadActivePatrolGroups();
 loadEmergencyAlerts();
+
+document.addEventListener("pointerdown", unlockAlertSound, { once: true });
+document.addEventListener("keydown", unlockAlertSound, { once: true });
 
 ["unitFilter", "teamFilter", "statusFilter", "onlineFilter"].forEach((id) => {
   const filter = document.getElementById(id);
@@ -689,3 +1094,27 @@ setInterval(() => {
   loadEmergencyAlerts();
 }, 10000);
 });
+
+function showBrowserEmergencyNotification(alert) {
+  if (!("Notification" in window)) return;
+
+  if (Notification.permission !== "granted") return;
+
+  const title = "🚨 AGILACOM Emergency Alert";
+
+  const body = `${alert.user?.name || alert.name || "Unknown Personnel"} sent an emergency alert. ${
+    alert.message || "Immediate attention required."
+  }`;
+
+  const notification = new Notification(title, {
+    body,
+    icon: "/images/philippine-army-logo.png",
+    badge: "/images/philippine-army-logo.png",
+    requireInteraction: true,
+  });
+
+  notification.onclick = () => {
+    window.focus();
+    window.location.href = "monitoring.html";
+  };
+}

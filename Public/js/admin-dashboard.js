@@ -176,10 +176,8 @@ socket.on("dashboardStats", (data) => {
   document.getElementById("onlineUnits").innerText = data.onlineUnits || 0;
   document.getElementById("activePatrols").innerText = data.activePatrols || 0;
 
-  const activeSosAlerts =
-    JSON.parse(localStorage.getItem("activeSosAlerts")) || [];
-
-  document.getElementById("activeAlerts").innerText = activeSosAlerts.length;
+  document.getElementById("activeAlerts").innerText =
+  data.activeAlerts || 0;
 
   document.getElementById("signalHealth").innerText =
     (data.signalHealth || 0) + "%";

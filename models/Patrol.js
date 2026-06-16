@@ -145,6 +145,12 @@ logs: [
   enum: [
   "checkpoint",
   "sos",
+  "emergency",
+  "medical",
+  "enemy_contact",
+  "backup_request",
+  "lost_connection",
+  "patrol_delayed",
   "sos_acknowledged",
   "backup_dispatched",
   "sos_resolved",

@@ -236,8 +236,18 @@ exports.getActivePatrols = async (req, res) => {
 // GET ACTIVE SOS ALERTS
 exports.getActiveSosAlerts = async (req, res) => {
   try {
+    const emergencyTypes = [
+      "sos",
+      "emergency",
+      "medical",
+      "enemy_contact",
+      "backup_request",
+      "lost_connection",
+      "patrol_delayed",
+    ];
+
     const patrols = await Patrol.find({
-      "logs.type": "sos",
+      "logs.type": { $in: emergencyTypes },
     })
       .populate("logs.user", "name email role")
       .sort({ updatedAt: -1 });
@@ -252,11 +262,11 @@ exports.getActiveSosAlerts = async (req, res) => {
       let latestOpenSos = null;
 
       logs.forEach((log) => {
-        if (log.type === "sos") {
+        if (emergencyTypes.includes(log.type)) {
           latestOpenSos = log;
         }
 
-        if (log.type === "sos_acknowledged") {
+        if (log.type === "sos_resolved") {
           latestOpenSos = null;
         }
       });
@@ -267,7 +277,10 @@ exports.getActiveSosAlerts = async (req, res) => {
         alertId: latestOpenSos._id,
         patrolId: patrol._id,
         patrolTitle: patrol.title,
+        team: patrol.team,
+unit: patrol.unit,
         area: patrol.area,
+        type: latestOpenSos.type,
         message: latestOpenSos.message,
         lat: latestOpenSos.lat,
         lng: latestOpenSos.lng,
@@ -632,6 +645,12 @@ exports.addPatrolLog = async (req, res) => {
     const allowedTypes = [
   "checkpoint",
   "sos",
+  "emergency",
+  "medical",
+  "enemy_contact",
+  "backup_request",
+  "lost_connection",
+  "patrol_delayed",
   "sos_acknowledged",
   "backup_dispatched",
   "sos_resolved",
@@ -668,6 +687,12 @@ const isAssignedLeader =
 const leaderAllowedTypes = [
   "checkpoint",
   "sos",
+  "emergency",
+  "medical",
+  "enemy_contact",
+  "backup_request",
+  "lost_connection",
+  "patrol_delayed",
   "note",
   "backup_dispatched",
   "sos_resolved",
@@ -677,6 +702,12 @@ const leaderAllowedTypes = [
 const memberAllowedTypes = [
   "checkpoint",
   "sos",
+  "emergency",
+  "medical",
+  "enemy_contact",
+  "backup_request",
+  "lost_connection",
+  "patrol_delayed",
   "backup_dispatched",
   "sos_resolved",
   "note",
@@ -723,17 +754,30 @@ if (!isCommandRole && !isAssigned && !isAssignedLeader) {
     );
 
     // REAL-TIME SOS ALERT
-if (type === "sos") {
+const emergencyTypes = [
+  "sos",
+  "emergency",
+  "medical",
+  "enemy_contact",
+  "backup_request",
+  "lost_connection",
+  "patrol_delayed",
+];
+
+if (emergencyTypes.includes(type)) {
   const io = req.app.get("io");
 
   const populatedUser = await User.findById(
     req.user._id
   ).select("name email role");
 
-  io.emit("sos-alert", {
+  io.emit("emergency-alert", {
     patrolId: patrol._id,
     patrolTitle: patrol.title,
     area: patrol.area,
+    team: patrol.team,
+unit: patrol.unit,
+    type,
 
     user: {
       id: populatedUser?._id,
@@ -749,9 +793,9 @@ if (type === "sos") {
   });
 
   console.log(
-    "🚨 SOS ALERT EMITTED:",
-    populatedUser?.name
-  );
+  `🚨 ${type.toUpperCase()} ALERT EMITTED:`,
+  populatedUser?.name
+);
 }
 if (type === "sos_acknowledged") {
   const io = req.app.get("io");

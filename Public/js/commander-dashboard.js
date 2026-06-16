@@ -104,6 +104,22 @@ function logout() {
 const socket = io();
 window.socket = socket;
 
+socket.on("new-alert", () => {
+  loadCommanderAlerts();
+});
+
+socket.on("alert-updated", () => {
+  loadCommanderAlerts();
+});
+
+socket.on("sos-alert", () => {
+  loadCommanderAlerts();
+});
+
+socket.on("sos-resolved", () => {
+  loadCommanderAlerts();
+});
+
 if (user && (user._id || user.id)) {
   sendTelemetry();
   setInterval(sendTelemetry, 5000);
@@ -168,10 +184,7 @@ socket.on("dashboardStats", (data) => {
   document.getElementById("onlineUnits").innerText = data.onlineUnits || 0;
   document.getElementById("activePatrols").innerText = data.activePatrols || 0;
 
-  const activeSosAlerts =
-    JSON.parse(localStorage.getItem("activeSosAlerts")) || [];
-
-  document.getElementById("activeAlerts").innerText = activeSosAlerts.length;
+  loadCommanderAlerts();
 
   document.getElementById("signalHealth").innerText =
     (data.signalHealth || 0) + "%";
@@ -357,3 +370,36 @@ Signal Health: ${signalHealth}
 
   URL.revokeObjectURL(url);
 }
+
+async function loadCommanderAlerts() {
+  try {
+    const res = await fetch("/api/alerts", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+  throw new Error("Failed to fetch alerts");
+}
+
+const alerts = await res.json();
+
+if (!Array.isArray(alerts)) {
+  document.getElementById("activeAlerts").innerText = 0;
+  return;
+}
+
+    const activeAlertCount = alerts.filter(
+      (alert) => alert.status === "active" || alert.status === "pending"
+    ).length;
+
+    document.getElementById("activeAlerts").innerText = activeAlertCount;
+    } catch (error) {
+    console.error("Failed to load commander alerts:", error);
+    document.getElementById("activeAlerts").innerText = 0;
+  }
+}
+
+loadCommanderAlerts();
+setInterval(loadCommanderAlerts, 5000);

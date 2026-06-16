@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const http = require("http");
+const mongoose = require("mongoose");
 const { Server } = require("socket.io");
 
 const User = require("./models/User");
@@ -15,6 +16,8 @@ const createDefaultAdmin = require("./utils/createAdmin");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const patrolRoutes = require("./routes/patrolRoutes");
+const Alert = require("./models/Alert");
+const alertRoutes = require("./routes/alertRoutes");
 
 
 const app = express();
@@ -26,6 +29,10 @@ app.set("io", io);
 const onlineUsers = new Map();
 let activeAlertCount = 0;
 
+function isValidObjectId(value) {
+  return Boolean(value) && mongoose.Types.ObjectId.isValid(String(value));
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -36,6 +43,7 @@ connectDB().then(() => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/patrols", patrolRoutes);
+app.use("/api/alerts", alertRoutes);
 
 app.use(express.static(path.join(__dirname, "Public")));
 
@@ -74,7 +82,7 @@ async function sendDashboardStats() {
 }
 
 async function markUserOffline(userId) {
-  if (!userId) return null;
+  if (!isValidObjectId(userId)) return null;
 
   onlineUsers.delete(String(userId));
 
@@ -347,34 +355,79 @@ if (noMovement) {
     }
   }
 });
-socket.on("sos-alert", async (data) => {
-  console.log("SOS ALERT RECEIVED:", data);
+socket.on("sos-alert", async (data = {}) => {
+  try {
+    console.log("SOS ALERT RECEIVED:", data);
 
-  activeAlertCount++;
+    let savedAlert = null;
+    let activePatrol = null;
 
-  if (data.userId) {
-  await User.findByIdAndUpdate(
-    data.userId,
-    {
-      tacticalStatus:
-        "emergency",
-    }
-  );
+if (isValidObjectId(data?.userId)) {
+  activePatrol = await Patrol.findOne({
+    status: { $in: ["active", "on_hold"] },
+    $or: [
+      { patrolLeader: data.userId },
+      { assignedUsers: data.userId },
+    ],
+  });
 }
 
-  io.emit("sos-alert", {
-    ...data,
-    timestamp: data.timestamp || new Date(),
-  });
+    if (isValidObjectId(data?.userId)) {
+      savedAlert = await Alert.create({
+        user: data.userId,
+        patrol: isValidObjectId(data?.patrolId)
+  ? data.patrolId
+  : activePatrol?._id || null,
+        type: data.type || "sos",
+        message: data.message || "Emergency alert sent",
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        accuracy: data.accuracy || null,
+        status: "active",
+        patrolTeam: data.team || activePatrol?.team || "",
+patrolUnit: data.unit || activePatrol?.unit || "",
+patrolTitle:
+  data.patrolTitle ||
+  activePatrol?.title ||
+  activePatrol?.name ||
+  "",
+      });
 
-  sendDashboardStats();
+      await User.findByIdAndUpdate(data.userId, {
+        tacticalStatus: "emergency",
+      });
+    }
+
+    activeAlertCount = await Alert.countDocuments({
+      status: "active",
+    });
+
+    io.emit("sos-alert", {
+  ...data,
+  alertId: savedAlert?._id,
+  patrolId: data.patrolId || activePatrol?._id,
+  patrolTitle:
+    data.patrolTitle ||
+    activePatrol?.title ||
+    activePatrol?.name ||
+    "Unknown Patrol",
+  team: data.team || activePatrol?.team || "Unassigned",
+  unit: data.unit || activePatrol?.unit || "N/A",
+  timestamp: savedAlert?.createdAt || new Date(),
+});
+
+    sendDashboardStats();
+  } catch (error) {
+    console.error("SOS alert save error:", error.message);
+  }
 });
 
 socket.on(
   "sos-acknowledged",
   async (data) => {
+    try {
 
-    if (data.userId) {
+    if (isValidObjectId(data?.userId)) {
       await User.findByIdAndUpdate(
         data.userId,
         {
@@ -388,39 +441,118 @@ socket.on(
       "sos-acknowledged",
       data
     );
+    } catch (error) {
+      console.error("SOS acknowledge error:", error.message);
+    }
   }
 );
 
-socket.on("incident-alert", (data) => {
-  console.log("INCIDENT ALERT RECEIVED:", data);
+socket.on("incident-alert", async (data = {}) => {
+  try {
+    console.log("INCIDENT ALERT RECEIVED:", data);
 
-  activeAlertCount++;
+    let savedAlert = null;
+    let activePatrol = null;
 
-  io.emit("sos-alert", {
-    ...data,
-    type: "incident",
-    timestamp: data.timestamp || new Date(),
+if (isValidObjectId(data?.userId)) {
+  activePatrol = await Patrol.findOne({
+    status: { $in: ["active", "on_hold"] },
+    $or: [
+      { patrolLeader: data.userId },
+      { assignedUsers: data.userId },
+    ],
   });
+}
 
-  sendDashboardStats();
+    if (isValidObjectId(data?.userId)) {
+      savedAlert = await Alert.create({
+        user: data.userId,
+        patrol: isValidObjectId(data?.patrolId)
+  ? data.patrolId
+  : activePatrol?._id || null,
+        type: data.type || "incident",
+        message: data.message || "Incident alert sent",
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        accuracy: data.accuracy || null,
+        status: "active",
+        patrolTeam: data.team || activePatrol?.team || "",
+patrolUnit: data.unit || activePatrol?.unit || "",
+patrolTitle:
+  data.patrolTitle ||
+  activePatrol?.title ||
+  activePatrol?.name ||
+  "",
+      });
+    }
+
+    activeAlertCount = await Alert.countDocuments({
+      status: "active",
+    });
+
+    io.emit("sos-alert", {
+  ...data,
+  alertId: savedAlert?._id,
+  type: data.type || "incident",
+  patrolId: data.patrolId || activePatrol?._id,
+  patrolTitle:
+    data.patrolTitle ||
+    activePatrol?.title ||
+    activePatrol?.name ||
+    "Unknown Patrol",
+  team: data.team || activePatrol?.team || "Unassigned",
+  unit: data.unit || activePatrol?.unit || "N/A",
+  timestamp: savedAlert?.createdAt || new Date(),
+});
+
+    sendDashboardStats();
+  } catch (error) {
+    console.error("Incident alert save error:", error.message);
+  }
 });
 
 socket.on("dispatch-backup", (data) => {
+  const timestamp = data.timestamp || new Date();
+
+  io.emit("backup-request", {
+    ...data,
+    type: "backup_request",
+    alertId: data.alertId || Date.now(),
+    timestamp,
+  });
+
   io.emit("backup-dispatched", {
     ...data,
-    timestamp: data.timestamp || new Date(),
+    timestamp,
   });
 });
 
 socket.on("resolve-sos", async (data) => {
+  const resolveFields = {
+    status: "resolved",
+    resolvedAt: new Date(),
+    resolvedBy: isValidObjectId(data?.resolvedBy) ? data.resolvedBy : null,
+  };
 
-  activeAlertCount =
-    Math.max(
-      0,
-      activeAlertCount - 1
+  if (isValidObjectId(data?.alertId)) {
+    await Alert.findByIdAndUpdate(data.alertId, resolveFields);
+  }
+
+  if (isValidObjectId(data?.patrolId)) {
+    await Alert.updateMany(
+      {
+        patrol: data.patrolId,
+        status: "active",
+      },
+      resolveFields
     );
+  }
 
-  if (data.patrolId) {
+  activeAlertCount = await Alert.countDocuments({
+  status: "active",
+});
+
+  if (isValidObjectId(data.patrolId)) {
     const patrol =
       await Patrol.findById(
         data.patrolId

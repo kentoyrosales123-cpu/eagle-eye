@@ -137,6 +137,68 @@
       </div>
     </section>
 
+    <section class="admin-panel">
+  <div class="panel-header">
+    <span>ALERT ANALYTICS</span>
+    <strong>CATEGORY COUNT</strong>
+  </div>
+
+  <div class="alert-analytics-grid">
+    <div class="analytics-card"><h3 id="analyticsSos">0</h3><p>SOS</p></div>
+    <div class="analytics-card"><h3 id="analyticsEmergency">0</h3><p>Emergency</p></div>
+    <div class="analytics-card"><h3 id="analyticsMedical">0</h3><p>Medical</p></div>
+    <div class="analytics-card"><h3 id="analyticsIncident">0</h3><p>Incident</p></div>
+    <div class="analytics-card"><h3 id="analyticsBackup">0</h3><p>Backup</p></div>
+    <div class="analytics-card"><h3 id="analyticsEnemy">0</h3><p>Enemy Contact</p></div>
+    <div class="analytics-card"><h3 id="analyticsLost">0</h3><p>Lost Connection</p></div>
+    <div class="analytics-card"><h3 id="analyticsDelayed">0</h3><p>Patrol Delayed</p></div>
+  </div>
+</section>
+
+    <section class="admin-panel">
+  <div class="panel-header">
+    <span>ALERT FILTERS</span>
+    <strong>SEARCH</strong>
+  </div>
+
+  <div class="tactical-filter-grid">
+    <input
+      type="text"
+      id="alertSearch"
+      placeholder="Search personnel, patrol, message..."
+    />
+
+    <select id="alertTypeFilter">
+      <option value="">All Types</option>
+      <option value="sos">SOS</option>
+      <option value="emergency">Emergency</option>
+      <option value="medical">Medical</option>
+      <option value="incident">Incident</option>
+      <option value="backup">Backup</option>
+      <option value="enemy_contact">Enemy Contact</option>
+      <option value="lost_connection">Lost Connection</option>
+      <option value="patrol_delayed">Patrol Delayed</option>
+    </select>
+
+    <select id="alertStatusFilter">
+      <option value="">All Status</option>
+      <option value="active">Active</option>
+      <option value="resolved">Resolved</option>
+      <option value="unresolved">
+  Unresolved
+</option>
+      <option value="acknowledged">Acknowledged</option>
+      <option value="cleared">Cleared</option>
+    </select>
+
+    <input type="date" id="alertDateFilter" />
+
+    <button onclick="clearAlertFilters()" class="clear-filter-btn">
+      Clear Filters
+    </button>
+  </div>
+</section>
+
     <section class="admin-panel alert-log-panel">
       <div class="panel-header">
         <span>ALERT HISTORY</span>

@@ -18,7 +18,7 @@
   />
 </head>
 
-<body class="user-body">
+<body class="user-body patrol-status-page">
 
   <aside class="user-sidebar">
     <div class="user-brand">
@@ -129,10 +129,7 @@
         </ul>
       </div>
     </section>
-  </main>
-
-  <!-- PATROL MODAL -->
-  <div id="patrolModal" class="patrol-modal">
+    <section id="patrolModal" class="patrol-modal">
     <div class="patrol-modal-content">
       <span id="closePatrolModal" class="close-modal">&times;</span>
 
@@ -163,7 +160,16 @@
 <button id="resumePatrolBtn" class="checkin-btn">RESUME PATROL</button>
 <button id="submitReportBtn" class="checkin-btn">SUBMIT REPORT</button>
         <button id="checkInBtn" class="checkin-btn">CHECK IN</button>
-        <button id="sosBtn" class="sos-btn">🚨 SOS ALERT</button>
+        <button id="sendAlertBtn" class="sos-btn">🚨 SEND ALERT</button>
+
+<select id="alertTypeSelect">
+  <option value="sos">SOS</option>
+  <option value="medical">Medical</option>
+  <option value="enemy_contact">Enemy Contact</option>
+  <option value="backup_request">Backup Request</option>
+  <option value="lost_connection">Lost Connection</option>
+  <option value="patrol_delayed">Patrol Delayed</option>
+</select>
         <button id="completePatrolBtn" class="complete-btn">
   COMPLETE PATROL
 </button>
@@ -176,7 +182,8 @@
         </div>
       </div>
     </div>
-  </div>
+  </section>
+  </main>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

@@ -34,6 +34,46 @@ if (!token || !user || !fieldRoles.includes(user.role)) {
 
 document.getElementById("userName").innerText = user?.name || "User";
 
+function renderMissionControl() {
+  const modalMissionName = document.getElementById("modalMissionName");
+  const modalStatus = document.getElementById("modalStatus");
+  const modalArea = document.getElementById("modalArea");
+  const modalStartTime = document.getElementById("modalStartTime");
+
+  if (!modalMissionName || !modalStatus || !modalArea || !modalStartTime) {
+    return;
+  }
+
+  if (!activePatrol) {
+    modalMissionName.innerText = "No Ongoing Patrol";
+    modalStatus.innerText = "STANDBY";
+    modalArea.innerText = "---";
+    modalStartTime.innerText = "--:--";
+    return;
+  }
+
+  modalMissionName.innerText = activePatrol.title;
+  modalStatus.innerText = formatPatrolStatus(activePatrol.status);
+  modalArea.innerText = activePatrol.area;
+  modalStartTime.innerText =
+    new Date(activePatrol.startTime).toLocaleTimeString();
+}
+
+function setMissionControlsAvailable(isAvailable) {
+  [
+    "checkInBtn",
+    "sendAlertBtn",
+    "completePatrolBtn",
+    "startPatrolBtn",
+    "holdPatrolBtn",
+    "resumePatrolBtn",
+    "submitReportBtn",
+  ].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = !isAvailable;
+  });
+}
+
 async function loadMyPatrol() {
   try {
     const res = await fetch("/api/patrols/active", {
@@ -80,10 +120,13 @@ async function loadMyPatrol() {
 
       patrolBtn.innerText = "No Ongoing Patrol";
       patrolBtn.disabled = true;
+      setMissionControlsAvailable(false);
+      renderMissionControl();
       return;
     }
 
     activePatrol = myPatrol;
+    setMissionControlsAvailable(true);
 
     document.getElementById("patrolMode").innerText =
   formatPatrolStatus(myPatrol.status);
@@ -172,30 +215,26 @@ if (completeBtn) {
   }
   
 }
+    renderMissionControl();
+    await loadPatrolLogs();
+    setTimeout(initPatrolMap, 300);
   } catch (error) {
     console.error("Load patrol error:", error);
   }
 }
 
 document.getElementById("patrolBtn").addEventListener("click", () => {
-  if (!activePatrol) return;
-
-  document.getElementById("modalMissionName").innerText = activePatrol.title;
-  document.getElementById("modalStatus").innerText =
-  formatPatrolStatus(activePatrol.status);
-  document.getElementById("modalArea").innerText = activePatrol.area;
-  document.getElementById("modalStartTime").innerText =
-    new Date(activePatrol.startTime).toLocaleTimeString();
-
-  document.getElementById("patrolModal").style.display = "block";
-
-  loadPatrolLogs();
-
-  setTimeout(initPatrolMap, 300);
+  document.getElementById("patrolModal")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
 });
 
 document.getElementById("closePatrolModal").addEventListener("click", () => {
-  document.getElementById("patrolModal").style.display = "none";
+  document.getElementById("patrolModal")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
 });
 
 async function getLatency() {
@@ -360,7 +399,7 @@ setTimeout(() => {
 }, 2000);
 });
 
-document.getElementById("sosBtn").addEventListener("click", async () => {
+document.getElementById("sendAlertBtn").addEventListener("click", async () => {
   if (!activePatrol) return;
 
   if (!latestPosition) {
@@ -368,13 +407,15 @@ document.getElementById("sosBtn").addEventListener("click", async () => {
     return;
   }
 
-  const btn = document.getElementById("sosBtn");
+  const btn = document.getElementById("sendAlertBtn");
   btn.disabled = true;
   btn.innerText = "SENDING...";
 
+  const alertType = document.getElementById("alertTypeSelect").value;
+
   await savePatrolLog(
-    "sos",
-    "SOS alert sent to command center.",
+    alertType,
+    `${alertType.replaceAll("_", " ").toUpperCase()} alert sent to command center.`,
     latestPosition.lat,
     latestPosition.lng
   );
@@ -382,13 +423,10 @@ document.getElementById("sosBtn").addEventListener("click", async () => {
   await loadPatrolLogs();
 
   btn.disabled = false;
-btn.innerText = "🚨 SOS ALERT";
-
-/* Optional success state */
-btn.innerText = "SOS SENT ✓";
+btn.innerText = "ALERT SENT ✓";
 
 setTimeout(() => {
-  btn.innerText = "🚨 SOS ALERT";
+  btn.innerText = "🚨 SEND ALERT";
 }, 2500);
 });
 
